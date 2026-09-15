@@ -303,7 +303,9 @@ export default function AdminTab({ profile }: AdminTabProps) {
 
       setInvitationCode(String(data.invitationCode ?? ""));
       setInvitationMessage(
-        "Invitation générée. Le code doit actuellement être transmis manuellement.",
+        data.emailSent
+          ? "Invitation cr\u00e9\u00e9e et envoy\u00e9e par e-mail."
+          : "Invitation cr\u00e9\u00e9e, mais l'e-mail n'a pas pu \u00eatre envoy\u00e9. Le code doit \u00eatre transmis manuellement.",
       );
       setInvitationEmail("");
       await loadInvitations();
