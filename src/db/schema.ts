@@ -170,7 +170,7 @@ export const dataSources = pgTable(
     providerKind: text("provider_kind").notNull(), // market | economic | hybrid
     licenseStatus: text("license_status").notNull().default("unverified"), // verified_internal | unverified | blocked
     licenseNotes: text("license_notes").notNull().default(""),
-    retentionPolicy: text("retention_policy").notNull().default("25_year_rolling"),
+    retentionPolicy: text("retention_policy").notNull().default("15_year_rolling"),
     configEnvKey: text("config_env_key").notNull().default(""),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

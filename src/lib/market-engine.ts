@@ -9,7 +9,7 @@ import {
   marketEngineEvents,
 } from "@/db/schema";
 
-export const RETENTION_YEARS = 25;
+export const RETENTION_YEARS = 15;
 export const MAX_CANDLE_BATCH = 2_000;
 
 export type CandleInput = {

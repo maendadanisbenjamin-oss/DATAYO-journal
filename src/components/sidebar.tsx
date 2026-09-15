@@ -4,6 +4,7 @@ import {
   BarChart3,
   BookOpen,
   CalendarDays,
+  ShieldCheck,
   ChevronsLeft,
   ChevronsRight,
   LineChart,
@@ -52,6 +53,7 @@ export default function Sidebar({
     { id: "market_replay", label: d.marketReplay, icon: <RotateCcw size={18} /> },
     { id: "backtesting", label: d.backtesting, icon: <FlaskConical size={18} /> },
     { id: "economic_calendar", label: d.economicCalendar, icon: <CalendarDays size={18} /> },
+    ...(profile.role === "admin" ? [{ id: "admin" as Tab, label: d.administration, icon: <ShieldCheck size={18} /> }] : []),
   ];
 
   const logo = (

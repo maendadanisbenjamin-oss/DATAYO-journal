@@ -106,7 +106,8 @@ export type Tab =
   | "analysis_stats"
   | "market_replay"
   | "backtesting"
-  | "economic_calendar";
+  | "economic_calendar"
+  | "admin";
 
 // ---------------------------------------------------------------------------
 // Market data & economic calendar transport types.

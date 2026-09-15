@@ -14,6 +14,7 @@ import {
   ProfileAccountsTab,
 } from "./tabs";
 import { BacktestingTab, EconomicCalendarTab, MarketReplayTab } from "./market-tabs";
+import AdminTab from "./admin-tab";
 import { LangToggle, ThemeToggle, Toasts } from "./ui";
 
 type Toast = { id: number; msg: string; kind: "ok" | "err" };
@@ -377,6 +378,7 @@ export default function Dashboard() {
         )}
 
         {tab === "economic_calendar" && <EconomicCalendarTab d={d} lang={lang} />}
+        {tab === "admin" && profile && <AdminTab profile={profile} />}
 
         <footer className="mt-14 border-t border-line pt-6 text-center text-[11.5px] text-mut">
           {d.appName} · {new Date().getFullYear()} · Tous droits réservés

@@ -34,8 +34,8 @@ describe("market data normalization", () => {
     expect(weekend[0].expectedBars).toBe(1);
   });
 
-  it("uses a rolling 25-year retention cutoff", () => {
-    expect(retentionCutoff(new Date("2026-09-01T00:00:00Z")).toISOString()).toBe("2001-09-01T00:00:00.000Z");
+  it("uses a rolling 15-year retention cutoff", () => {
+    expect(retentionCutoff(new Date("2026-09-01T00:00:00Z")).toISOString()).toBe("2011-09-01T00:00:00.000Z");
   });
 });
 

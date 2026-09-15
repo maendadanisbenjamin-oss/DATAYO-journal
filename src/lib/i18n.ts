@@ -296,6 +296,12 @@ const dict = {
     authTagline: "Votre journal de trading professionnel, partout, en temps réel.",
     demoHint: "Compte démo : yowel.kanezi@email.com / demo1234",
     photoTooLarge: "L'image dépasse la limite de taille.",
+    administration: "Administration",
+    users: "Utilisateurs",
+    invitations: "Invitations",
+    sessions: "Sessions",
+    globalOverview: "Vue globale",
+    maintenance: "Maintenance",
   },
   en: {
     appName: "Trade Journal",
@@ -592,6 +598,12 @@ const dict = {
     authTagline: "Your professional trading journal, everywhere, in real time.",
     demoHint: "Demo account: yowel.kanezi@email.com / demo1234",
     photoTooLarge: "Image exceeds size limit.",
+    administration: "Administration",
+    users: "Users",
+    invitations: "Invitations",
+    sessions: "Sessions",
+    globalOverview: "Global overview",
+    maintenance: "Maintenance",
   },
 } as const;
 
