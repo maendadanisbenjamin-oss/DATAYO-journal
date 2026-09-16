@@ -70,6 +70,13 @@ export async function PATCH(req: Request) {
   const now = new Date();
 
   if (action === "approve") {
+    if (target.status !== "pending") {
+      return NextResponse.json(
+        { error: "Seule une demande en attente peut être approuvée." },
+        { status: 400 },
+      );
+    }
+
     const [updated] = await db
       .update(profiles)
       .set({
