@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 import { and, asc, eq, gte, inArray, lte, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -65,11 +65,11 @@ export function normalizeCandle(input: CandleInput): NormalizedCandle {
   const close = Number(input.close);
   const volume = Number(input.volume ?? 0);
 
-  if (![open, high, low, close, volume].every(Number.isFinite)) throw new Error("OHLCV non numérique");
-  if (volume < 0) throw new Error("Volume négatif");
-  if (high < low) throw new Error("High inférieur au Low");
+  if (![open, high, low, close, volume].every(Number.isFinite)) throw new Error("OHLCV non numÃ©rique");
+  if (volume < 0) throw new Error("Volume nÃ©gatif");
+  if (high < low) throw new Error("High infÃ©rieur au Low");
   if (high < Math.max(open, close) || low > Math.min(open, close)) {
-    throw new Error("OHLC incohérent : High/Low ne contient pas Open/Close");
+    throw new Error("OHLC incohÃ©rent : High/Low ne contient pas Open/Close");
   }
 
   return { ts, open, high, low, close, volume, isFinal: input.final !== false };
@@ -172,12 +172,12 @@ export async function ensureManualSource(kind: "market" | "economic") {
     .insert(dataSources)
     .values({
       key,
-      name: kind === "market" ? "Import CSV validé" : "Saisie / import économique validé",
+      name: kind === "market" ? "Import CSV validÃ©" : "Saisie / import Ã©conomique validÃ©",
       providerKind: kind,
       licenseStatus: "verified_internal",
       licenseNotes:
-        "Source manuelle : l'opérateur confirme qu'il dispose des droits de stockage et d'utilisation interne des données importées.",
-      retentionPolicy: "25_year_rolling",
+        "Source manuelle : l'opÃ©rateur confirme qu'il dispose des droits de stockage et d'utilisation interne des donnÃ©es importÃ©es.",
+      retentionPolicy: "15_year_rolling",
       configEnvKey: "",
     })
     .returning();
@@ -213,7 +213,7 @@ export async function recordMarketEngineEvent(input: {
 
 export function parseCsv(text: string) {
   const lines = text.replace(/\r/g, "").split("\n").filter((line) => line.trim());
-  if (lines.length < 2) throw new Error("Le CSV doit contenir un en-tête et au moins une bougie");
+  if (lines.length < 2) throw new Error("Le CSV doit contenir un en-tÃªte et au moins une bougie");
   const delimiter = lines[0].includes(";") ? ";" : ",";
   const header = splitCsvLine(lines[0], delimiter).map((h) => h.trim().toLowerCase().replace(/[_\s-]/g, ""));
   const at = (aliases: string[]) => aliases.map((a) => header.indexOf(a)).find((i) => i >= 0) ?? -1;
