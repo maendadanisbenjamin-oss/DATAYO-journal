@@ -1,4 +1,5 @@
-import {
+﻿import {
+  AnyPgColumn,
   boolean,
   index,
   integer,
@@ -11,7 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 // ---------------------------------------------------------------------------
-// Existing journal domain — preserved and only extended where needed.
+// Existing journal domain - preserved and only extended where needed.
 // ---------------------------------------------------------------------------
 export const profiles = pgTable(
   "profiles",
@@ -21,28 +22,23 @@ export const profiles = pgTable(
     email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
     role: text("role").notNull().default("member"), // admin | member
+    status: text("status").notNull().default("active"), // pending | active | rejected | suspended
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    approvedBy: text("approved_by").references((): AnyPgColumn => profiles.id, { onDelete: "set null" }),
+    rejectedAt: timestamp("rejected_at", { withTimezone: true }),
+    rejectedBy: text("rejected_by").references((): AnyPgColumn => profiles.id, { onDelete: "set null" }),
+    rejectionReason: text("rejection_reason"),
     title: text("title").notNull().default("Trader"),
     bio: text("bio").notNull().default(""),
     memberSince: integer("member_since").notNull().default(2024),
     avatarUrl: text("avatar_url"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("profiles_email_idx").on(t.email), index("profiles_role_idx").on(t.role)]
-);
-
-export const invitations = pgTable(
-  "invitations",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    email: text("email").notNull(),
-    tokenHash: text("token_hash").notNull(),
-    status: text("status").notNull().default("pending"), // pending | accepted | revoked | expired
-    invitedBy: text("invited_by").references(() => profiles.id, { onDelete: "set null" }),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [uniqueIndex("invitations_email_idx").on(t.email), index("invitations_status_idx").on(t.status)]
+  (t) => [
+    uniqueIndex("profiles_email_idx").on(t.email),
+    index("profiles_role_idx").on(t.role),
+    index("profiles_status_idx").on(t.status),
+  ]
 );
 
 export const sessions = pgTable(
@@ -137,7 +133,7 @@ export const trades = pgTable(
 );
 
 // ---------------------------------------------------------------------------
-// Market data engine — provider-neutral, M1 canonical storage.
+// Market data engine - provider-neutral, M1 canonical storage.
 // ---------------------------------------------------------------------------
 export const instruments = pgTable(
   "instruments",
@@ -165,7 +161,7 @@ export const dataSources = pgTable(
   "data_sources",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    key: text("key").notNull(), // manual-csv | twelve-data | trading-economics | …
+    key: text("key").notNull(), // manual-csv | twelve-data | trading-economics | ...
     name: text("name").notNull(),
     providerKind: text("provider_kind").notNull(), // market | economic | hybrid
     licenseStatus: text("license_status").notNull().default("unverified"), // verified_internal | unverified | blocked
@@ -282,7 +278,7 @@ export const marketEngineEvents = pgTable(
 );
 
 // ---------------------------------------------------------------------------
-// Economic calendar engine — time-aware publication and revision history.
+// Economic calendar engine - time-aware publication and revision history.
 // ---------------------------------------------------------------------------
 export const economicEvents = pgTable(
   "economic_events",
@@ -381,7 +377,7 @@ export const tradeEconomicEvents = pgTable(
 );
 
 // ---------------------------------------------------------------------------
-// Strategy / replay / backtest — distinct run data, never mixed with LIVE.
+// Strategy / replay / backtest - distinct run data, never mixed with LIVE.
 // ---------------------------------------------------------------------------
 export const strategies = pgTable(
   "strategies",

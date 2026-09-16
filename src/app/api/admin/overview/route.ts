@@ -6,7 +6,6 @@ import {
   backtests,
   economicEvents,
   instruments,
-  invitations,
   marketDataGaps,
   marketDataImports,
   profiles,
@@ -28,7 +27,7 @@ export async function GET() {
     accountCount,
     tradeStats,
     sessionCount,
-    pendingInvitations,
+    pendingRegistrations,
     instrumentCount,
     importCount,
     gapStats,
@@ -48,8 +47,8 @@ export async function GET() {
     db.select({ count: count() }).from(sessions),
     db
       .select({ count: count() })
-      .from(invitations)
-      .where(eq(invitations.status, "pending")),
+      .from(profiles)
+      .where(eq(profiles.status, "pending")),
     db.select({ count: count() }).from(instruments),
     db.select({ count: count() }).from(marketDataImports),
     db
@@ -72,7 +71,7 @@ export async function GET() {
     trades: tradeStats[0]?.count ?? 0,
     pnl: Number(tradeStats[0]?.pnl ?? 0),
     sessions: sessionCount[0]?.count ?? 0,
-    pendingInvitations: pendingInvitations[0]?.count ?? 0,
+    pendingRegistrations: pendingRegistrations[0]?.count ?? 0,
     instruments: instrumentCount[0]?.count ?? 0,
     imports: importCount[0]?.count ?? 0,
     gaps: {

@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -34,12 +34,18 @@ export function verifyPassword(password: string, stored: string) {
 }
 
 const sha = (v: string) => createHash("sha256").update(v).digest("hex");
-export const hashInvitationCode = sha;
 
 export async function createSession(profileId: string, device: string) {
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000);
-  await db.insert(sessions).values({ id: sha(token), profileId, device: device.slice(0, 200), expiresAt });
+  await db
+    .insert(sessions)
+    .values({
+      id: sha(token),
+      profileId,
+      device: device.slice(0, 200),
+      expiresAt,
+    });
   return token;
 }
 
@@ -85,14 +91,27 @@ export async function currentUser(): Promise<{ profile: ProfileRow; sessionId: s
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
+
   const id = sha(token);
   const [row] = await db
     .select({ profile: profiles, sessionId: sessions.id })
     .from(sessions)
     .innerJoin(profiles, eq(sessions.profileId, profiles.id))
-    .where(and(eq(sessions.id, id), gt(sessions.expiresAt, new Date())));
+    .where(
+      and(
+        eq(sessions.id, id),
+        gt(sessions.expiresAt, new Date()),
+        eq(profiles.status, "active"),
+      ),
+    );
+
   if (!row) return null;
-  db.update(sessions).set({ lastSeenAt: new Date() }).where(eq(sessions.id, id)).catch(() => {});
+
+  db.update(sessions)
+    .set({ lastSeenAt: new Date() })
+    .where(eq(sessions.id, id))
+    .catch(() => {});
+
   return row;
 }
 
@@ -107,17 +126,28 @@ export async function requireAdmin() {
 }
 
 export function unauthorized() {
-  return NextResponse.json({ error: "Authentification requise" }, { status: 401 });
+  return NextResponse.json(
+    { error: "Authentification requise" },
+    { status: 401 },
+  );
 }
 
-export const devAutoLogin = () => process.env.NODE_ENV !== "production" && process.env.DEV_AUTO_LOGIN === "true";
+export const devAutoLogin = () =>
+  process.env.NODE_ENV !== "production" &&
+  process.env.DEV_AUTO_LOGIN === "true";
 
 /** Returns the demo profile (creating it if needed) for dev auto-login. */
 export async function demoProfile(): Promise<ProfileRow> {
-  const [existing] = await db.select().from(profiles).where(eq(profiles.id, "me"));
+  const [existing] = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.id, "me"));
+
   if (existing) return existing;
+
   const [first] = await db.select().from(profiles).limit(1);
   if (first) return first;
+
   const [created] = await db
     .insert(profiles)
     .values({
@@ -129,6 +159,7 @@ export async function demoProfile(): Promise<ProfileRow> {
       memberSince: 2024,
     })
     .returning();
+
   return created;
 }
 

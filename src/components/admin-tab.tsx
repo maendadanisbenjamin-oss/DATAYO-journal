@@ -4,11 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Activity,
   BarChart3,
+  Check,
   Database,
-  MailPlus,
   RefreshCw,
   ServerCog,
   ShieldCheck,
+  UserCheck,
+  UserPlus,
+  UserX,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -17,7 +20,7 @@ import type { Profile } from "@/lib/types";
 type AdminSection =
   | "overview"
   | "users"
-  | "invitations"
+  | "registrations"
   | "sessions"
   | "maintenance";
 
@@ -28,7 +31,7 @@ type Overview = {
   trades: number;
   pnl: number;
   sessions: number;
-  pendingInvitations: number;
+  pendingRegistrations: number;
   instruments: number;
   imports: number;
   gaps: {
@@ -42,6 +45,8 @@ type Overview = {
   backtests: number;
 };
 
+type AccountStatus = "pending" | "active" | "rejected" | "suspended";
+
 type AdminUser = {
   id: string;
   displayName: string;
@@ -51,16 +56,8 @@ type AdminUser = {
   memberSince: number;
   avatarUrl: string | null;
   role?: "admin" | "member";
-  createdAt: string;
-};
-
-type AdminInvitation = {
-  id: string;
-  email: string;
-  invitedBy: string;
-  expiresAt: string;
-  status: "pending" | "accepted" | "revoked";
-  acceptedAt: string | null;
+  status?: AccountStatus;
+  rejectionReason?: string | null;
   createdAt: string;
 };
 
@@ -92,7 +89,7 @@ const sections: Array<{
 }> = [
   { id: "overview", label: "Vue globale", icon: BarChart3 },
   { id: "users", label: "Utilisateurs", icon: Users },
-  { id: "invitations", label: "Invitations", icon: MailPlus },
+  { id: "registrations", label: "Demandes d'inscription", icon: UserPlus },
   { id: "sessions", label: "Sessions", icon: ShieldCheck },
   { id: "maintenance", label: "Maintenance", icon: ServerCog },
 ];
@@ -112,7 +109,10 @@ function StatCard({
     <div className="yj-card p-4">
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm opacity-65">{label}</span>
-        <Icon size={18} className={tone === "up" ? "text-emerald-300" : ""} />
+        <Icon
+          size={18}
+          className={tone === "up" ? "text-emerald-300" : ""}
+        />
       </div>
       <div className="mt-3 text-2xl font-semibold">{value}</div>
     </div>
@@ -123,25 +123,52 @@ function formatDate(value: string) {
   return new Date(value).toLocaleString("fr-FR");
 }
 
+function statusLabel(status?: AccountStatus) {
+  switch (status) {
+    case "pending":
+      return "En attente";
+    case "active":
+      return "Actif";
+    case "rejected":
+      return "Refusé";
+    case "suspended":
+      return "Suspendu";
+    default:
+      return "—";
+  }
+}
+
+function statusClass(status?: AccountStatus) {
+  switch (status) {
+    case "pending":
+      return "border-amber-500/30 text-amber-300";
+    case "active":
+      return "border-emerald-500/30 text-emerald-300";
+    case "rejected":
+      return "border-red-500/30 text-red-300";
+    case "suspended":
+      return "border-orange-500/30 text-orange-300";
+    default:
+      return "border-white/10 opacity-60";
+  }
+}
+
 export default function AdminTab({ profile }: AdminTabProps) {
   const [section, setSection] = useState<AdminSection>("overview");
 
   const [overview, setOverview] = useState<Overview | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [invitations, setInvitations] = useState<AdminInvitation[]>([]);
   const [sessions, setSessions] = useState<AdminSession[]>([]);
 
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState("");
-  const [invitationsLoading, setInvitationsLoading] = useState(false);
-  const [invitationsError, setInvitationsError] = useState("");
+  const [registrationsLoading, setRegistrationsLoading] = useState(false);
+  const [registrationsError, setRegistrationsError] = useState("");
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [sessionsError, setSessionsError] = useState("");
 
-  const [invitationEmail, setInvitationEmail] = useState("");
-  const [invitationDays, setInvitationDays] = useState("14");
-  const [invitationCode, setInvitationCode] = useState("");
-  const [invitationMessage, setInvitationMessage] = useState("");
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
   const [maintenanceError, setMaintenanceError] = useState("");
@@ -166,9 +193,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
 
       setOverview((await res.json()) as Overview);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erreur inconnue.",
-      );
+      setError(err instanceof Error ? err.message : "Erreur inconnue.");
     } finally {
       setLoading(false);
     }
@@ -197,26 +222,28 @@ export default function AdminTab({ profile }: AdminTabProps) {
     }
   }, []);
 
-  const loadInvitations = useCallback(async () => {
-    setInvitationsLoading(true);
-    setInvitationsError("");
+  const loadRegistrations = useCallback(async () => {
+    setRegistrationsLoading(true);
+    setRegistrationsError("");
 
     try {
-      const res = await fetch("/api/invitations", {
+      const res = await fetch("/api/admin/users", {
         cache: "no-store",
       });
 
       if (!res.ok) {
-        throw new Error("Impossible de charger les invitations.");
+        throw new Error(
+          "Impossible de charger les demandes d'inscription.",
+        );
       }
 
-      setInvitations((await res.json()) as AdminInvitation[]);
+      setUsers((await res.json()) as AdminUser[]);
     } catch (err) {
-      setInvitationsError(
+      setRegistrationsError(
         err instanceof Error ? err.message : "Erreur inconnue.",
       );
     } finally {
-      setInvitationsLoading(false);
+      setRegistrationsLoading(false);
     }
   }, []);
 
@@ -242,6 +269,109 @@ export default function AdminTab({ profile }: AdminTabProps) {
       setSessionsLoading(false);
     }
   }, []);
+
+  const updateUserStatus = useCallback(
+    async (
+      id: string,
+      action: "approve" | "reject" | "suspend" | "reactivate",
+      reason = "",
+    ) => {
+      setActionId(id);
+      setRegistrationsError("");
+      setUsersError("");
+
+      try {
+        const res = await fetch("/api/admin/users", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id,
+            action,
+            rejectionReason: reason,
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(
+            data?.error ?? "Impossible de modifier le compte.",
+          );
+        }
+
+        setRejectionReason("");
+        await Promise.all([loadUsers(), loadOverview()]);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Erreur inconnue.";
+
+        setRegistrationsError(message);
+        setUsersError(message);
+      } finally {
+        setActionId(null);
+      }
+    },
+    [loadOverview, loadUsers],
+  );
+
+  const approveRegistration = useCallback(
+    async (id: string) => {
+      if (!window.confirm("Approuver cette demande d'inscription ?")) {
+        return;
+      }
+
+      await updateUserStatus(id, "approve");
+    },
+    [updateUserStatus],
+  );
+
+  const rejectRegistration = useCallback(
+    async (id: string) => {
+      const reason = window.prompt(
+        "Motif du refus (facultatif) :",
+        rejectionReason,
+      );
+
+      if (reason === null) {
+        return;
+      }
+
+      await updateUserStatus(id, "reject", reason.trim());
+    },
+    [rejectionReason, updateUserStatus],
+  );
+
+  const suspendUser = useCallback(
+    async (user: AdminUser) => {
+      if (
+        !window.confirm(
+          `Suspendre le compte de ${user.displayName} ? Toutes ses sessions seront révoquées.`,
+        )
+      ) {
+        return;
+      }
+
+      await updateUserStatus(user.id, "suspend");
+    },
+    [updateUserStatus],
+  );
+
+  const reactivateUser = useCallback(
+    async (user: AdminUser) => {
+      if (
+        !window.confirm(
+          `Réactiver le compte de ${user.displayName} ?`,
+        )
+      ) {
+        return;
+      }
+
+      await updateUserStatus(user.id, "reactivate");
+    },
+    [updateUserStatus],
+  );
 
   const revokeSession = useCallback(
     async (id: string) => {
@@ -276,75 +406,6 @@ export default function AdminTab({ profile }: AdminTabProps) {
       }
     },
     [loadSessions],
-  );
-
-  const createInvitation = useCallback(async () => {
-    setInvitationMessage("");
-    setInvitationsError("");
-    setInvitationCode("");
-
-    try {
-      const res = await fetch("/api/invitations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: invitationEmail,
-          expiresInDays: Number(invitationDays),
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(data?.error ?? "Impossible de créer l'invitation.");
-      }
-
-      setInvitationCode(String(data.invitationCode ?? ""));
-      setInvitationMessage(
-        data.emailSent
-          ? "Invitation cr\u00e9\u00e9e et envoy\u00e9e par e-mail."
-          : "Invitation cr\u00e9\u00e9e, mais l'e-mail n'a pas pu \u00eatre envoy\u00e9. Le code doit \u00eatre transmis manuellement.",
-      );
-      setInvitationEmail("");
-      await loadInvitations();
-      await loadOverview();
-    } catch (err) {
-      setInvitationsError(
-        err instanceof Error ? err.message : "Erreur inconnue.",
-      );
-    }
-  }, [invitationDays, invitationEmail, loadInvitations, loadOverview]);
-
-  const revokeInvitation = useCallback(
-    async (id: string) => {
-      try {
-        const res = await fetch("/api/invitations", {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ id }),
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-          throw new Error(
-            data?.error ?? "Impossible de révoquer l'invitation.",
-          );
-        }
-
-        await loadInvitations();
-        await loadOverview();
-      } catch (err) {
-        setInvitationsError(
-          err instanceof Error ? err.message : "Erreur inconnue.",
-        );
-      }
-    },
-    [loadInvitations, loadOverview],
   );
 
   const runMaintenance = useCallback(async () => {
@@ -391,16 +452,13 @@ export default function AdminTab({ profile }: AdminTabProps) {
   }, [profile.role, loadOverview]);
 
   useEffect(() => {
-    if (profile.role === "admin" && section === "users") {
+    if (
+      profile.role === "admin" &&
+      (section === "users" || section === "registrations")
+    ) {
       void loadUsers();
     }
   }, [profile.role, section, loadUsers]);
-
-  useEffect(() => {
-    if (profile.role === "admin" && section === "invitations") {
-      void loadInvitations();
-    }
-  }, [profile.role, section, loadInvitations]);
 
   useEffect(() => {
     if (profile.role === "admin" && section === "sessions") {
@@ -424,6 +482,10 @@ export default function AdminTab({ profile }: AdminTabProps) {
     );
   }
 
+  const pendingUsers = users.filter(
+    (user) => user.status === "pending",
+  );
+
   return (
     <div className="space-y-5">
       <div className="yj-card p-3">
@@ -445,6 +507,12 @@ export default function AdminTab({ profile }: AdminTabProps) {
               >
                 <Icon size={17} />
                 {item.label}
+                {item.id === "registrations" &&
+                  (overview?.pendingRegistrations ?? 0) > 0 && (
+                    <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[11px] text-amber-300">
+                      {overview?.pendingRegistrations}
+                    </span>
+                  )}
               </button>
             );
           })}
@@ -497,7 +565,11 @@ export default function AdminTab({ profile }: AdminTabProps) {
 
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 <StatCard label="Sessions" value={overview.sessions} icon={ShieldCheck} />
-                <StatCard label="Invitations en attente" value={overview.pendingInvitations} icon={MailPlus} />
+                <StatCard
+                  label="Demandes en attente"
+                  value={overview.pendingRegistrations}
+                  icon={UserPlus}
+                />
                 <StatCard label="Instruments" value={overview.instruments} icon={Database} />
                 <StatCard label="Imports" value={overview.imports} icon={ServerCog} />
               </div>
@@ -545,7 +617,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                 <div>
                   <h2 className="text-lg font-semibold">Utilisateurs</h2>
                   <p className="mt-1 text-sm opacity-65">
-                    Comptes enregistrés sur la plateforme.
+                    Comptes enregistrés et gestion de leurs accès.
                   </p>
                 </div>
               </div>
@@ -582,15 +654,16 @@ export default function AdminTab({ profile }: AdminTabProps) {
           ) : (
             <div className="yj-card overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1000px] text-left text-sm">
+                <table className="w-full min-w-[1200px] text-left text-sm">
                   <thead className="border-b border-white/10 text-xs uppercase tracking-wide opacity-60">
                     <tr>
                       <th className="px-5 py-4">Utilisateur</th>
                       <th className="px-5 py-4">Email</th>
                       <th className="px-5 py-4">Rôle</th>
-                      <th className="px-5 py-4">Titre</th>
+                      <th className="px-5 py-4">Statut</th>
                       <th className="px-5 py-4">Membre depuis</th>
                       <th className="px-5 py-4">Créé le</th>
+                      <th className="px-5 py-4">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -610,14 +683,54 @@ export default function AdminTab({ profile }: AdminTabProps) {
                             {user.role ?? "member"}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-xs opacity-70">
-                          {user.title || "—"}
+                        <td className="px-5 py-4">
+                          <span
+                            className={`rounded-full border px-2.5 py-1 text-xs ${statusClass(
+                              user.status,
+                            )}`}
+                          >
+                            {statusLabel(user.status)}
+                          </span>
                         </td>
                         <td className="px-5 py-4 text-xs opacity-70">
                           {user.memberSince || "—"}
                         </td>
                         <td className="px-5 py-4 text-xs opacity-70">
                           {formatDate(user.createdAt)}
+                        </td>
+                        <td className="px-5 py-4">
+                          {user.role === "admin" ? (
+                            <span className="text-xs opacity-50">
+                              Compte administrateur
+                            </span>
+                          ) : user.status === "active" ? (
+                            <button
+                              type="button"
+                              onClick={() => void suspendUser(user)}
+                              disabled={actionId === user.id}
+                              className="rounded-lg border border-orange-500/20 px-3 py-1.5 text-xs text-orange-300 hover:opacity-80 disabled:opacity-50"
+                            >
+                              Suspendre
+                            </button>
+                          ) : user.status === "suspended" ||
+                            user.status === "rejected" ? (
+                            <button
+                              type="button"
+                              onClick={() => void reactivateUser(user)}
+                              disabled={actionId === user.id}
+                              className="rounded-lg border border-emerald-500/20 px-3 py-1.5 text-xs text-emerald-300 hover:opacity-80 disabled:opacity-50"
+                            >
+                              Réactiver
+                            </button>
+                          ) : user.status === "pending" ? (
+                            <button
+                              type="button"
+                              onClick={() => setSection("registrations")}
+                              className="rounded-lg border border-amber-500/20 px-3 py-1.5 text-xs text-amber-300 hover:opacity-80"
+                            >
+                              Examiner
+                            </button>
+                          ) : null}
                         </td>
                       </tr>
                     ))}
@@ -629,145 +742,114 @@ export default function AdminTab({ profile }: AdminTabProps) {
         </div>
       )}
 
-      {section === "invitations" && (
+      {section === "registrations" && (
         <div className="space-y-4">
           <div className="yj-card p-5">
-            <div className="flex items-center gap-3">
-              <MailPlus size={22} />
-              <div>
-                <h2 className="text-lg font-semibold">Invitations</h2>
-                <p className="mt-1 text-sm opacity-65">
-                  Générer et superviser les invitations d&apos;inscription.
-                </p>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <UserPlus size={22} />
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    Demandes d&apos;inscription
+                  </h2>
+                  <p className="mt-1 text-sm opacity-65">
+                    Examinez les nouvelles demandes et décidez de leur accès
+                    à DATAYO-journal.
+                  </p>
+                </div>
               </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 md:grid-cols-[1fr_180px_auto]">
-              <input
-                value={invitationEmail}
-                onChange={(event) => setInvitationEmail(event.target.value)}
-                type="email"
-                placeholder="email@exemple.com"
-                className="rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm outline-none"
-              />
-
-              <select
-                value={invitationDays}
-                onChange={(event) => setInvitationDays(event.target.value)}
-                className="rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm outline-none"
-              >
-                <option value="1">1 jour</option>
-                <option value="7">7 jours</option>
-                <option value="14">14 jours</option>
-                <option value="30">30 jours</option>
-                <option value="60">60 jours</option>
-                <option value="90">90 jours</option>
-              </select>
 
               <button
                 type="button"
-                onClick={() => void createInvitation()}
-                disabled={!invitationEmail || invitationsLoading}
-                className="rounded-xl bg-white/10 px-5 py-3 text-sm font-medium hover:bg-white/15 disabled:opacity-40"
-              >
-                Générer
-              </button>
-            </div>
-
-            {invitationMessage && (
-              <div className="mt-4 rounded-xl border border-emerald-500/20 p-4 text-sm text-emerald-300">
-                {invitationMessage}
-              </div>
-            )}
-
-            {invitationCode && (
-              <div className="mt-3 rounded-xl border border-white/10 p-4">
-                <div className="text-xs uppercase tracking-wide opacity-50">
-                  Code d&apos;invitation
-                </div>
-                <div className="mt-2 select-all font-mono text-lg tracking-widest">
-                  {invitationCode}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {invitationsError && (
-            <div className="yj-card border-red-500/30 p-4 text-sm text-red-300">
-              {invitationsError}
-            </div>
-          )}
-
-          <div className="yj-card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-              <h3 className="font-medium">Historique</h3>
-              <button
-                type="button"
-                onClick={() => void loadInvitations()}
-                disabled={invitationsLoading}
-                className="rounded-lg border border-white/10 p-2 hover:opacity-80 disabled:opacity-50"
+                onClick={() => void loadRegistrations()}
+                disabled={registrationsLoading}
+                className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm hover:opacity-80 disabled:opacity-50"
               >
                 <RefreshCw
                   size={16}
-                  className={invitationsLoading ? "animate-spin" : ""}
+                  className={
+                    registrationsLoading ? "animate-spin" : ""
+                  }
                 />
+                Actualiser
               </button>
             </div>
-
-            {invitations.length === 0 ? (
-              <div className="p-6 text-sm opacity-70">
-                Aucune invitation trouvée.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] text-left text-sm">
-                  <thead className="border-b border-white/10 text-xs uppercase tracking-wide opacity-60">
-                    <tr>
-                      <th className="px-5 py-4">Email</th>
-                      <th className="px-5 py-4">Statut</th>
-                      <th className="px-5 py-4">Expiration</th>
-                      <th className="px-5 py-4">Créée le</th>
-                      <th className="px-5 py-4">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invitations.map((invitation) => (
-                      <tr
-                        key={invitation.id}
-                        className="border-b border-white/5 last:border-0"
-                      >
-                        <td className="px-5 py-4">{invitation.email}</td>
-                        <td className="px-5 py-4">
-                          <span className="rounded-full border border-white/10 px-2.5 py-1 text-xs">
-                            {invitation.status}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-xs opacity-70">
-                          {formatDate(invitation.expiresAt)}
-                        </td>
-                        <td className="px-5 py-4 text-xs opacity-70">
-                          {formatDate(invitation.createdAt)}
-                        </td>
-                        <td className="px-5 py-4">
-                          {invitation.status === "pending" && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void revokeInvitation(invitation.id)
-                              }
-                              className="rounded-lg border border-red-500/20 px-3 py-1.5 text-xs text-red-300 hover:opacity-80"
-                            >
-                              Révoquer
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
+
+          {registrationsError && (
+            <div className="yj-card border-red-500/30 p-4 text-sm text-red-300">
+              {registrationsError}
+            </div>
+          )}
+
+          {registrationsLoading && pendingUsers.length === 0 ? (
+            <div className="yj-card p-6 text-sm opacity-70">
+              Chargement des demandes...
+            </div>
+          ) : pendingUsers.length === 0 ? (
+            <div className="yj-card p-6">
+              <div className="flex items-center gap-3">
+                <UserCheck size={20} className="text-emerald-300" />
+                <div>
+                  <div className="font-medium">
+                    Aucune demande en attente
+                  </div>
+                  <div className="mt-1 text-sm opacity-60">
+                    Toutes les demandes d'inscription ont été traitées.
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingUsers.map((user) => (
+                <div key={user.id} className="yj-card p-5">
+                  <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h3 className="font-semibold">
+                          {user.displayName}
+                        </h3>
+                        <span className="rounded-full border border-amber-500/30 px-2.5 py-1 text-xs text-amber-300">
+                          En attente
+                        </span>
+                      </div>
+
+                      <div className="mt-2 text-sm opacity-70">
+                        {user.email}
+                      </div>
+
+                      <div className="mt-2 text-xs opacity-50">
+                        Demande créée le {formatDate(user.createdAt)}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void approveRegistration(user.id)}
+                        disabled={actionId === user.id}
+                        className="flex items-center gap-2 rounded-xl border border-emerald-500/30 px-4 py-2.5 text-sm text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-50"
+                      >
+                        <Check size={16} />
+                        Approuver
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => void rejectRegistration(user.id)}
+                        disabled={actionId === user.id}
+                        className="flex items-center gap-2 rounded-xl border border-red-500/30 px-4 py-2.5 text-sm text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                      >
+                        <UserX size={16} />
+                        Refuser
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -807,7 +889,11 @@ export default function AdminTab({ profile }: AdminTabProps) {
           )}
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            <StatCard label="Sessions" value={sessions.length} icon={ShieldCheck} />
+            <StatCard
+              label="Sessions"
+              value={sessions.length}
+              icon={ShieldCheck}
+            />
             <StatCard
               label="Actives"
               value={
@@ -875,13 +961,13 @@ export default function AdminTab({ profile }: AdminTabProps) {
                           <td className="px-5 py-4 text-xs opacity-75">
                             {session.device || "Appareil inconnu"}
                           </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-xs opacity-70">
+                          <td className="whitespace-nowrap px-5 py-4 text-xs opacity-70">
                             {formatDate(session.createdAt)}
                           </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-xs opacity-70">
+                          <td className="whitespace-nowrap px-5 py-4 text-xs opacity-70">
                             {formatDate(session.lastSeenAt)}
                           </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-xs opacity-70">
+                          <td className="whitespace-nowrap px-5 py-4 text-xs opacity-70">
                             {formatDate(session.expiresAt)}
                           </td>
                           <td className="px-5 py-4">
@@ -898,7 +984,9 @@ export default function AdminTab({ profile }: AdminTabProps) {
                           <td className="px-5 py-4">
                             <button
                               type="button"
-                              onClick={() => void revokeSession(session.id)}
+                              onClick={() =>
+                                void revokeSession(session.id)
+                              }
                               className="rounded-lg border border-red-500/20 px-3 py-1.5 text-xs text-red-300 hover:opacity-80"
                             >
                               Révoquer
@@ -954,7 +1042,9 @@ export default function AdminTab({ profile }: AdminTabProps) {
           <div className="yj-card p-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <div className="font-medium">Maintenance de rétention</div>
+                <div className="font-medium">
+                  Maintenance de rétention
+                </div>
                 <p className="mt-1 text-sm opacity-65">
                   Calcule la coupure à 15 ans et supprime les données
                   antérieures.
@@ -969,7 +1059,9 @@ export default function AdminTab({ profile }: AdminTabProps) {
               >
                 <ServerCog
                   size={17}
-                  className={maintenanceLoading ? "animate-spin" : ""}
+                  className={
+                    maintenanceLoading ? "animate-spin" : ""
+                  }
                 />
                 {maintenanceLoading
                   ? "Maintenance en cours..."
@@ -1013,4 +1105,3 @@ export default function AdminTab({ profile }: AdminTabProps) {
     </div>
   );
 }
-
