@@ -157,7 +157,7 @@ function MarketDataLibrary({
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold/15 text-gold"><Database size={18} /></span>
           <div>
             <h3 className="text-[14px] font-bold text-white">{d.marketData}</h3>
-            <p className="text-[12px] text-mut">M1 canonique · validation OHLCV · déduplication · gaps · rétention 25 ans</p>
+            <p className="text-[12px] text-mut">M1 canonique · validation OHLCV · déduplication · gaps · rétention 15 ans</p>
           </div>
         </div>
         <ChevronDown size={18} className={clsx("text-mut transition", open && "rotate-180")} />

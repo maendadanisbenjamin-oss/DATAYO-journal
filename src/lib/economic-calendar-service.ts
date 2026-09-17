@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   economicCalendarImports,
@@ -78,7 +78,7 @@ export async function upsertEconomicEvent(profileId: string, input: EconomicEven
   const source = await ensureManualSource("economic");
   const item = normalizeEconomicEvent(input);
   if (item.scheduledAt < retentionCutoff()) {
-    throw new Error("Cet événement est hors de la fenêtre active de rétention de 25 ans");
+    throw new Error("Cet événement est hors de la fenêtre active de rétention de 15 ans");
   }
 
   const [existing] = await db
@@ -198,6 +198,45 @@ function currenciesForSymbol(symbol: string) {
     currencies.add("USD");
   }
   return [...currencies];
+}
+
+export async function getBacktestEconomicEvents(input: {
+  from: Date;
+  to: Date;
+}) {
+  const batchSize = 500;
+  const rows: Array<(typeof economicEvents)["$inferSelect"]> = [];
+  let cursor: { scheduledAt: Date; id: string } | null = null;
+
+  while (true) {
+    const conditions = [
+      gte(economicEvents.scheduledAt, input.from),
+      lte(economicEvents.scheduledAt, input.to),
+    ];
+
+    if (cursor) {
+      conditions.push(
+        sql`(${economicEvents.scheduledAt}, ${economicEvents.id}) > (${cursor.scheduledAt}, ${cursor.id})`
+      );
+    }
+
+    const batch = await db
+      .select()
+      .from(economicEvents)
+      .where(and(...conditions))
+      .orderBy(asc(economicEvents.scheduledAt), asc(economicEvents.id))
+      .limit(batchSize);
+
+    if (!batch.length) break;
+
+    rows.push(...batch);
+    const last = batch[batch.length - 1];
+    cursor = { scheduledAt: last.scheduledAt, id: last.id };
+
+    if (batch.length < batchSize) break;
+  }
+
+  return rows;
 }
 
 /** Associates a journal trade with relevant economic events around execution time. */

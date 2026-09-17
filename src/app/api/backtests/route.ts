@@ -3,8 +3,8 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { accounts, backtestTrades, backtests, instruments, strategies } from "@/db/schema";
 import { requireUser, unauthorized } from "@/lib/auth";
-import { listEconomicEvents } from "@/lib/economic-calendar-service";
-import { getMarketCandles } from "@/lib/market-data-service";
+import { getBacktestEconomicEvents } from "@/lib/economic-calendar-service";
+import { getBacktestCandles } from "@/lib/market-data-service";
 import { runBacktest, type BacktestRules } from "@/lib/backtest-engine";
 
 export const dynamic = "force-dynamic";
@@ -26,9 +26,9 @@ export async function POST(req: Request) {
     const startAt = new Date(String(body.startAt ?? ""));
     const endAt = new Date(String(body.endAt ?? ""));
     if (!instrumentId || Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime()) || startAt >= endAt) {
-      return NextResponse.json({ error: "Instrument et période valide requis" }, { status: 400 });
+      return NextResponse.json({ error: "Instrument et pÃ©riode valide requis" }, { status: 400 });
     }
-    if (endAt > new Date()) return NextResponse.json({ error: "La période de Backtest ne peut pas finir dans le futur" }, { status: 400 });
+    if (endAt > new Date()) return NextResponse.json({ error: "La pÃ©riode de Backtest ne peut pas finir dans le futur" }, { status: 400 });
     const [instrument] = await db.select().from(instruments).where(eq(instruments.id, instrumentId));
     if (!instrument) return NextResponse.json({ error: "Instrument introuvable" }, { status: 404 });
     const accountId = body.accountId ? String(body.accountId) : null;
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     let storedRules: BacktestRules = {};
     if (strategyId) {
       const [strategy] = await db.select().from(strategies).where(and(eq(strategies.id, strategyId), eq(strategies.profileId, me.id)));
-      if (!strategy) return NextResponse.json({ error: "Stratégie introuvable" }, { status: 404 });
+      if (!strategy) return NextResponse.json({ error: "StratÃ©gie introuvable" }, { status: 404 });
       try { storedRules = JSON.parse(strategy.rules) as BacktestRules; } catch {}
       try { storedRules.newsFilter = JSON.parse(strategy.newsRules); } catch {}
     }
@@ -65,12 +65,12 @@ export async function POST(req: Request) {
       config: JSON.stringify(rules),
     }).returning();
 
-    const candles = await getMarketCandles({ instrumentId, timeframe: timeframe as Parameters<typeof getMarketCandles>[0]["timeframe"], start: startAt, end: endAt, limit: 30000 });
+    const candles = await getBacktestCandles({ instrumentId, timeframe: timeframe as Parameters<typeof getBacktestCandles>[0]["timeframe"], start: startAt, end: endAt });
     if (candles.length < 2) {
-      await db.update(backtests).set({ status: "failed", summary: JSON.stringify({ error: "Pas assez de bougies importées pour cette période" }), completedAt: new Date() }).where(eq(backtests.id, run.id));
-      return NextResponse.json({ error: "Pas assez de bougies importées pour cette période", backtest: run }, { status: 400 });
+      await db.update(backtests).set({ status: "failed", summary: JSON.stringify({ error: "Pas assez de bougies importÃ©es pour cette pÃ©riode" }), completedAt: new Date() }).where(eq(backtests.id, run.id));
+      return NextResponse.json({ error: "Pas assez de bougies importÃ©es pour cette pÃ©riode", backtest: run }, { status: 400 });
     }
-    const events = await listEconomicEvents({ from: startAt, to: endAt, limit: 1000 });
+    const events = await getBacktestEconomicEvents({ from: startAt, to: endAt });
     const result = runBacktest({ candles, initialCapital, rules, economicEvents: events });
 
     if (result.positions.length) {

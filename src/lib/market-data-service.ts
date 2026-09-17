@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { candlesM1, instruments, marketDataGaps, marketDataImports } from "@/db/schema";
 import {
@@ -222,4 +222,58 @@ export async function getMarketCandles(input: {
     .limit(limit);
 
   return aggregateCandles(raw, input.timeframe);
+}
+
+export async function getBacktestCandles(input: {
+  instrumentId: string;
+  timeframe: Timeframe;
+  start: Date;
+  end: Date;
+}) {
+  const source = await ensureManualSource("market");
+  const batchSize = 2_000;
+  const rows: Array<{
+    ts: Date;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    isFinal: boolean;
+    quality: string;
+  }> = [];
+  let cursor: Date | null = null;
+
+  while (true) {
+    const conditions = [
+      eq(candlesM1.instrumentId, input.instrumentId),
+      eq(candlesM1.sourceId, source.id),
+      gte(candlesM1.ts, input.start),
+      lte(candlesM1.ts, input.end),
+    ];
+    if (cursor) conditions.push(gt(candlesM1.ts, cursor));
+
+    const batch = await db
+.select({
+  ts: candlesM1.ts,
+  open: candlesM1.open,
+  high: candlesM1.high,
+  low: candlesM1.low,
+  close: candlesM1.close,
+  volume: candlesM1.volume,
+  isFinal: candlesM1.isFinal,
+  quality: candlesM1.quality,
+})
+.from(candlesM1)
+.where(and(...conditions))
+.orderBy(asc(candlesM1.ts))
+.limit(batchSize);
+
+    if (!batch.length) break;
+    rows.push(...batch);
+    cursor = batch[batch.length - 1].ts;
+    if (batch.length < batchSize) break;
+  }
+
+  return aggregateCandles(rows, input.timeframe);
 }
