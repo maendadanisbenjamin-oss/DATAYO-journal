@@ -2,13 +2,22 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { profiles, sessions } from "@/db/schema";
 
 export const SESSION_COOKIE = "tj_session";
 export const GUEST_COOKIE = "tj_guest";
 const SESSION_DAYS = 90;
+const EXPIRED_SESSION_RETENTION_DAYS = 30;
+
+export async function cleanupExpiredSessions(now = new Date()) {
+  const cutoff = new Date(
+    now.getTime() - EXPIRED_SESSION_RETENTION_DAYS * 86400_000,
+  );
+
+  await db.delete(sessions).where(lt(sessions.expiresAt, cutoff));
+}
 
 export type ProfileRow = typeof profiles.$inferSelect;
 export type PublicProfile = Omit<ProfileRow, "passwordHash">;
@@ -36,6 +45,8 @@ export function verifyPassword(password: string, stored: string) {
 const sha = (v: string) => createHash("sha256").update(v).digest("hex");
 
 export async function createSession(profileId: string, device: string) {
+  await cleanupExpiredSessions();
+
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000);
   await db

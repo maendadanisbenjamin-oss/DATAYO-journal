@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
-import { profiles } from "@/db/schema";
-import { hashPassword, publicProfile, requireUser, unauthorized, verifyPassword } from "@/lib/auth";
+import { profiles, sessions } from "@/db/schema";
+import { currentUser, hashPassword, publicProfile, unauthorized, verifyPassword } from "@/lib/auth";
 import { publish } from "@/lib/realtime";
 
 export const dynamic = "force-dynamic";
 
 export async function PATCH(req: Request) {
-  const me = await requireUser();
-  if (!me) return unauthorized();
+  const u = await currentUser();
+  if (!u) return unauthorized();
+  const me = u.profile;
   const b = await req.json().catch(() => ({}));
   const patch: Partial<typeof profiles.$inferInsert> = {};
+  let passwordChanged = false;
   if (typeof b.displayName === "string" && b.displayName.trim()) patch.displayName = b.displayName.trim().slice(0, 80);
   if (typeof b.title === "string") patch.title = b.title.trim().slice(0, 80);
   if (typeof b.bio === "string") patch.bio = b.bio.trim().slice(0, 600);
@@ -36,8 +38,21 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Mot de passe actuel incorrect" }, { status: 403 });
     }
     patch.passwordHash = hashPassword(b.newPassword);
+    passwordChanged = true;
   }
   const [updated] = await db.update(profiles).set(patch).where(eq(profiles.id, me.id)).returning();
+
+  if (passwordChanged) {
+    await db
+      .delete(sessions)
+      .where(
+        and(
+          eq(sessions.profileId, me.id),
+          ne(sessions.id, u.sessionId),
+        ),
+      );
+  }
+
   await publish(me.id, "profile");
   return NextResponse.json(publicProfile(updated));
 }
