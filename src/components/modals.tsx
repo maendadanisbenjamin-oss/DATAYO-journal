@@ -118,12 +118,12 @@ export function TradeModal({
         if (tp) {
           const rewardDistance = Math.abs(tp - entry);
           const rr = Number((rewardDistance / riskDistance).toFixed(2));
-          up("rrRatio", rr);
+          setTimeout(() => up("rrRatio", rr), 0);
         }
         if (exit) {
           const actualReward = f.direction === "long" ? exit - entry : entry - exit;
           const r = Number((actualReward / riskDistance).toFixed(2));
-          up("rMultiple", r);
+          setTimeout(() => up("rMultiple", r), 0);
         }
       }
     }
@@ -238,7 +238,7 @@ export function TradeModal({
         ))}
       </div>
 
-      {/* Step 1: Données du Trade & Exécution */}
+      {/* Step 1: DonnÃ©es du Trade & ExÃ©cution */}
       {step === 1 && (
         <div className="space-y-4">
           <h4 className="text-[14px] font-bold text-white border-b border-line pb-2">{d.step1Title}</h4>
@@ -257,7 +257,7 @@ export function TradeModal({
               <input
                 list="symbol-suggestions"
                 className="yj-input uppercase"
-                placeholder="EURUSD, XAUUSD…"
+                placeholder="EURUSD, XAUUSDâ€¦"
                 value={f.symbol}
                 onChange={(e) => up("symbol", e.target.value.toUpperCase())}
               />
@@ -272,7 +272,7 @@ export function TradeModal({
               <input type="date" className="yj-input" value={f.date} onChange={(e) => up("date", e.target.value)} />
             </Field>
 
-            <Field label="Heure d’entrée (UTC)">
+            <Field label="Heure dâ€™entrÃ©e (UTC)">
               <input
                 type="datetime-local"
                 className="yj-input mono"
@@ -300,7 +300,7 @@ export function TradeModal({
               <input
                 list="ict-models-list"
                 className="yj-input"
-                placeholder="Silver Bullet, FVG…"
+                placeholder="Silver Bullet, FVGâ€¦"
                 value={f.ictModel}
                 onChange={(e) => {
                   up("ictModel", e.target.value);
@@ -359,7 +359,7 @@ export function TradeModal({
             </Field>
           </div>
 
-          {/* Prix d'Exécution Box */}
+          {/* Prix d'ExÃ©cution Box */}
           <div className="rounded-2xl border border-line bg-white/[0.02] p-4">
             <h5 className="mb-3 text-[13px] font-bold text-white">{d.executionPrices}</h5>
             <div className="grid gap-3 sm:grid-cols-5">
@@ -419,7 +419,7 @@ export function TradeModal({
             <div className="mt-4 grid grid-cols-3 gap-3 border-t border-line pt-3 text-[12.5px]">
               <div>
                 <span className="yj-label block">{d.rrRatio}</span>
-                <span className="mono text-[15px] font-bold text-white">{f.rrRatio ? `1 : ${f.rrRatio}` : "—"}</span>
+                <span className="mono text-[15px] font-bold text-white">{f.rrRatio ? `1 : ${f.rrRatio}` : "â€”"}</span>
               </div>
               <div>
                 <span className="yj-label block">{d.tradeResultDollars}</span>
@@ -446,7 +446,7 @@ export function TradeModal({
         </div>
       )}
 
-      {/* Step 2: Structure de Marché & POI */}
+      {/* Step 2: Structure de MarchÃ© & POI */}
       {step === 2 && (
         <div className="space-y-4">
           <h4 className="text-[14px] font-bold text-white border-b border-line pb-2">{d.step2Title}</h4>
@@ -479,7 +479,7 @@ export function TradeModal({
               <input
                 list="poi-zones-list"
                 className="yj-input"
-                placeholder="Order Block, FVG, Liquidity sweep…"
+                placeholder="Order Block, FVG, Liquidity sweepâ€¦"
                 value={f.poiZone}
                 onChange={(e) => up("poiZone", e.target.value)}
               />
@@ -494,7 +494,7 @@ export function TradeModal({
               <textarea
                 rows={4}
                 className="yj-textarea"
-                placeholder="Confluence HTF, liquidité interne/externe, session overlap, alignement momentum…"
+                placeholder="Confluence HTF, liquiditÃ© interne/externe, session overlap, alignement momentumâ€¦"
                 value={f.setupNotes}
                 onChange={(e) => {
                   up("setupNotes", e.target.value);
@@ -532,7 +532,7 @@ export function TradeModal({
                 onChange={(e) => up("planRespect", e.target.value as TradeInput["planRespect"])}
               >
                 <option value="Oui">Oui (100% au plan)</option>
-                <option value="Partiel">Partiel (Légères déviations)</option>
+                <option value="Partiel">Partiel (LÃ©gÃ¨res dÃ©viations)</option>
                 <option value="Non">Non (Hors plan / Impulsif)</option>
               </select>
             </Field>
@@ -544,7 +544,7 @@ export function TradeModal({
                 onChange={(e) => up("tradeOutcome", e.target.value as TradeInput["tradeOutcome"])}
               >
                 <option value="TP touché">TP touché</option>
-                <option value="SL touché">SL touché</option>
+                <option value="SL touchÃ©">SL touchÃ©</option>
                 <option value="BE">BE (Break-Even)</option>
                 <option value="Sortie manuelle">Sortie manuelle</option>
               </select>
@@ -554,7 +554,7 @@ export function TradeModal({
               <textarea
                 rows={2}
                 className="yj-textarea"
-                placeholder="Biais directionnel, actualités ou annonces éco, sentiment général…"
+                placeholder="Biais directionnel, actualitÃ©s ou annonces Ã©co, sentiment gÃ©nÃ©ralâ€¦"
                 value={f.htfBias}
                 onChange={(e) => up("htfBias", e.target.value)}
               />
@@ -564,7 +564,7 @@ export function TradeModal({
               <textarea
                 rows={3}
                 className="yj-textarea"
-                placeholder="Suivi en direct, déplacement du SL vers BE, prises de profits partielles…"
+                placeholder="Suivi en direct, dÃ©placement du SL vers BE, prises de profits partiellesâ€¦"
                 value={f.managementNotes}
                 onChange={(e) => up("managementNotes", e.target.value)}
               />
@@ -595,7 +595,7 @@ export function TradeModal({
               onRemove={() => handleRemoveScreenshot("management")}
             />
 
-            {/* Screenshot 3: Résultat */}
+            {/* Screenshot 3: RÃ©sultat */}
             <ScreenshotZone
               title={d.screenshot3}
               dataUrl={screenshots.result}
@@ -608,7 +608,7 @@ export function TradeModal({
             <textarea
               rows={4}
               className="yj-textarea"
-              placeholder="Que retenir de ce trade ? Points forts, erreurs à éviter, ajustements pour les prochaines positions…"
+              placeholder="Que retenir de ce trade ? Points forts, erreurs Ã  Ã©viter, ajustements pour les prochaines positionsâ€¦"
               value={f.lessonsLearned}
               onChange={(e) => up("lessonsLearned", e.target.value)}
             />
@@ -657,7 +657,7 @@ function ScreenshotZone({
         >
           <UploadCloud size={24} className="mb-2 text-mut" />
           <p className="text-[11.5px] font-medium text-mut">Glisser une image ou</p>
-          <p className="text-[11px] font-bold text-gold hover:underline">cliquer pour téléverser</p>
+          <p className="text-[11px] font-bold text-gold hover:underline">cliquer pour tÃ©lÃ©verser</p>
         </div>
       )}
       <input
@@ -689,8 +689,8 @@ export function TradeDetailModal({
 
   useEffect(() => {
     if (!trade.openedAt) {
-      setRelatedEvents([]);
-      return;
+      const timer = setTimeout(() => setRelatedEvents([]), 0);
+      return () => clearTimeout(timer);
     }
     fetch(`/api/economic-events/nearby?tradeId=${trade.id}`)
       .then((response) => (response.ok ? response.json() : []))
@@ -709,7 +709,7 @@ export function TradeDetailModal({
   return (
     <>
       <Modal
-        title={`${d.tradeDetails} · ${trade.symbol}`}
+        title={`${d.tradeDetails} Â· ${trade.symbol}`}
         onClose={onClose}
         wide
         footer={
@@ -823,10 +823,10 @@ export function TradeDetailModal({
             <div className="rounded-2xl border border-line bg-white/[0.02] p-4">
               <h5 className="mb-2 font-bold text-white">{d.step3Title}</h5>
               <p className="text-[12px] text-mut">
-                Émotion : <b className="text-white">{trade.emotionalState}</b>
+                Ã‰motion : <b className="text-white">{trade.emotionalState}</b>
               </p>
               <p className="mt-1 text-[12px] text-mut">
-                Plan : <b className="text-white">{trade.planRespect}</b> · Résultat :{" "}
+                Plan : <b className="text-white">{trade.planRespect}</b> Â· RÃ©sultat :{" "}
                 <b className="text-white">{trade.tradeOutcome}</b>
               </p>
               {trade.managementNotes && (
@@ -839,18 +839,18 @@ export function TradeDetailModal({
           {relatedEvents.length > 0 && (
             <div className="rounded-2xl border border-gold/25 bg-gold/[0.05] p-4">
               <div className="mb-3 flex items-center justify-between">
-                <h5 className="font-bold text-white">News économiques proches</h5>
-                <span className="yj-badge yj-badge-gold">± 60 min</span>
+                <h5 className="font-bold text-white">News Ã©conomiques proches</h5>
+                <span className="yj-badge yj-badge-gold">Â± 60 min</span>
               </div>
               <div className="space-y-2">
                 {relatedEvents.map(({ event, relation, minutesFromEntry }) => (
                   <div key={event.id} className="rounded-xl border border-line bg-panel/40 p-3 text-[12px]">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-semibold text-white">{event.title}</span>
-                      <span className={clsx("yj-badge", event.importance === "high" ? "yj-badge-down" : event.importance === "medium" ? "yj-badge-gold" : "yj-badge-mut")}>{event.currency || event.country || "Macro"} · {event.importance.toUpperCase()}</span>
+                      <span className={clsx("yj-badge", event.importance === "high" ? "yj-badge-down" : event.importance === "medium" ? "yj-badge-gold" : "yj-badge-mut")}>{event.currency || event.country || "Macro"} Â· {event.importance.toUpperCase()}</span>
                     </div>
-                    <p className="mt-1 text-mut">{new Date(event.scheduledAt).toLocaleString(undefined, { timeZone: "UTC", dateStyle: "short", timeStyle: "short" })} UTC · {relation.replaceAll("_", " ")} {minutesFromEntry !== null ? `(${minutesFromEntry >= 0 ? "+" : ""}${minutesFromEntry} min)` : ""}</p>
-                    <div className="mt-2 grid grid-cols-3 gap-2 mono text-[11px]"><span className="rounded bg-white/[0.04] p-1.5 text-mut">Prev.<b className="block text-white">{event.previous ?? "—"}</b></span><span className="rounded bg-white/[0.04] p-1.5 text-mut">Fcst.<b className="block text-white">{event.forecast ?? "—"}</b></span><span className="rounded bg-white/[0.04] p-1.5 text-mut">Act.<b className="block text-white">{event.actual ?? "—"}</b></span></div>
+                    <p className="mt-1 text-mut">{new Date(event.scheduledAt).toLocaleString(undefined, { timeZone: "UTC", dateStyle: "short", timeStyle: "short" })} UTC Â· {relation.replaceAll("_", " ")} {minutesFromEntry !== null ? `(${minutesFromEntry >= 0 ? "+" : ""}${minutesFromEntry} min)` : ""}</p>
+                    <div className="mt-2 grid grid-cols-3 gap-2 mono text-[11px]"><span className="rounded bg-white/[0.04] p-1.5 text-mut">Prev.<b className="block text-white">{event.previous ?? "â€”"}</b></span><span className="rounded bg-white/[0.04] p-1.5 text-mut">Fcst.<b className="block text-white">{event.forecast ?? "â€”"}</b></span><span className="rounded bg-white/[0.04] p-1.5 text-mut">Act.<b className="block text-white">{event.actual ?? "â€”"}</b></span></div>
                   </div>
                 ))}
               </div>
@@ -1162,7 +1162,7 @@ export function ProfileModal({
             onChange={(e) => setF({ ...f, currentPassword: e.target.value })}
           />
         </Field>
-        <Field label={`${d.newPassword} · ${d.leaveBlank}`}>
+        <Field label={`${d.newPassword} Â· ${d.leaveBlank}`}>
           <input
             type="password"
             className="yj-input"
@@ -1179,7 +1179,7 @@ export function ProfileModal({
             <li key={s.id} className="flex items-center justify-between gap-3 px-3 py-2.5 text-[12.5px]">
               <div className="min-w-0">
                 <p className="truncate text-white">
-                  {s.device || "—"}{" "}
+                  {s.device || "â€”"}{" "}
                   {s.current && <span className="yj-badge yj-badge-gold ml-1">{d.thisDevice}</span>}
                 </p>
                 <p className="text-[11px] text-mut">
@@ -1198,3 +1198,4 @@ export function ProfileModal({
     </Modal>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { type Lang, t as tr } from "@/lib/i18n";
@@ -60,9 +60,9 @@ export default function Dashboard() {
   useEffect(() => {
     try {
       const l = localStorage.getItem("tj-lang") as Lang | null;
-      if (l === "fr" || l === "en") setLang(l);
-      if (localStorage.getItem("tj-theme") === "light") setTheme("light");
-      if (localStorage.getItem("tj-sidebar") === "1") setCollapsed(true);
+      if (l === "fr" || l === "en") setTimeout(() => setLang(l), 0);
+      if (localStorage.getItem("tj-theme") === "light") setTimeout(() => setTheme("light"), 0);
+      if (localStorage.getItem("tj-sidebar") === "1") setTimeout(() => setCollapsed(true), 0);
     } catch {}
   }, []);
 
@@ -111,14 +111,15 @@ export default function Dashboard() {
   );
 
   useEffect(() => {
-    load();
+    setTimeout(() => { void load(); }, 0);
   }, [load]);
 
   // Realtime: SSE with browser auto-reconnect and polling fallback
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const liveRef = useRef(false);
-  liveRef.current = live;
-
+  useEffect(() => {
+    liveRef.current = live;
+  }, [live]);
   const scheduleReload = useCallback(() => {
     if (reloadTimer.current) clearTimeout(reloadTimer.current);
     reloadTimer.current = setTimeout(() => load(true), 250);
@@ -280,7 +281,7 @@ export default function Dashboard() {
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
         <p className="text-down">{error}</p>
         <button className="yj-btn yj-btn-ghost" onClick={() => load()}>
-          ↻
+          â†»
         </button>
       </div>
     );
@@ -324,9 +325,9 @@ export default function Dashboard() {
         <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-[26px] font-extrabold tracking-tight text-white">
-              {greeting}, {profile.displayName.split(" ")[0]} 👋
+              {greeting}, {profile.displayName.split(" ")[0]} ðŸ‘‹
             </h1>
-            <p className="text-[13px] text-mut">{d.dashboard} · {d.subtitle}</p>
+            <p className="text-[13px] text-mut">{d.dashboard} Â· {d.subtitle}</p>
             {devMode && <p className="mt-1 text-[11px] text-gold/80">{d.devMode}</p>}
           </div>
 
@@ -381,7 +382,7 @@ export default function Dashboard() {
         {tab === "admin" && profile && <AdminTab profile={profile} />}
 
         <footer className="mt-14 border-t border-line pt-6 text-center text-[11.5px] text-mut">
-          {d.appName} · {new Date().getFullYear()} · Tous droits réservés
+          {d.appName} Â· {new Date().getFullYear()} Â· Tous droits rÃ©servÃ©s
         </footer>
       </main>
 
@@ -400,7 +401,7 @@ export default function Dashboard() {
       {detailModal.open && detailModal.trade && (
         <TradeDetailModal
           trade={detailModal.trade}
-          accountName={accounts.find((a) => a.id === detailModal.trade?.accountId)?.name ?? "—"}
+          accountName={accounts.find((a) => a.id === detailModal.trade?.accountId)?.name ?? "â€”"}
           onClose={() => setDetailModal({ open: false, trade: null })}
           onEdit={() => {
             const tr_ = detailModal.trade;

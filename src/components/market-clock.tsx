@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import clsx from "clsx";
 import type { Dict } from "@/lib/i18n";
@@ -21,9 +21,12 @@ const SESSIONS = [
 export default function MarketClock({ d, lang }: { d: Dict; lang: "fr" | "en" }) {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
-    setNow(new Date());
+    const initial = setTimeout(() => setNow(new Date()), 0);
     const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(initial);
+      clearInterval(id);
+    };
   }, []);
 
   const cur = now ?? new Date(0);
@@ -53,7 +56,7 @@ export default function MarketClock({ d, lang }: { d: Dict; lang: "fr" | "en" })
         {states.map((s) => (
           <div
             key={s.abbr}
-            title={`${d[s.key]} · ${s.open}:00–${s.close}:00`}
+            title={`${d[s.key]} Â· ${s.open}:00â€“${s.close}:00`}
             className={clsx(
               "flex items-center gap-2 rounded-xl border px-2.5 py-1.5 transition",
               s.isOpen ? "border-up/30 bg-up/[0.06]" : "border-line bg-panel/40 opacity-70"

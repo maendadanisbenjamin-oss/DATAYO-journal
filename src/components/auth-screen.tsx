@@ -102,10 +102,10 @@ export default function AuthScreen({
             <div className="mt-6 space-y-4">
               <div className="rounded-lg border border-gold/30 bg-gold/10 px-4 py-4">
                 <p className="font-semibold text-white">
-                  Demande d'inscription envoyée
+                  Demande d&apos;inscription envoyée
                 </p>
                 <p className="mt-2 text-[12.5px] leading-5 text-mut">
-                  Votre compte est actuellement en attente d'approbation par
+                  Votre compte est actuellement en attente d&apos;approbation par
                   un administrateur. Vous pourrez vous connecter dès que votre
                   compte sera activé.
                 </p>

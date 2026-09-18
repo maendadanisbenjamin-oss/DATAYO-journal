@@ -130,11 +130,11 @@ function statusLabel(status?: AccountStatus) {
     case "active":
       return "Actif";
     case "rejected":
-      return "Refusé";
+      return "RefusÃ©";
     case "suspended":
       return "Suspendu";
     default:
-      return "—";
+      return "â€”";
   }
 }
 
@@ -159,6 +159,18 @@ export default function AdminTab({ profile }: AdminTabProps) {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [sessions, setSessions] = useState<AdminSession[]>([]);
+  const [now, setNow] = useState(0);
+
+  useEffect(() => {
+    const updateNow = () => setNow(Date.now());
+    const timer = setTimeout(updateNow, 0);
+    const interval = setInterval(updateNow, 30000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, []);
 
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState("");
@@ -347,7 +359,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
     async (user: AdminUser) => {
       if (
         !window.confirm(
-          `Suspendre le compte de ${user.displayName} ? Toutes ses sessions seront révoquées.`,
+          `Suspendre le compte de ${user.displayName} ? Toutes ses sessions seront rÃ©voquÃ©es.`,
         )
       ) {
         return;
@@ -362,7 +374,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
     async (user: AdminUser) => {
       if (
         !window.confirm(
-          `Réactiver le compte de ${user.displayName} ?`,
+          `RÃ©activer le compte de ${user.displayName} ?`,
         )
       ) {
         return;
@@ -375,7 +387,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
 
   const revokeSession = useCallback(
     async (id: string) => {
-      if (!window.confirm("Révoquer cette session ?")) return;
+      if (!window.confirm("RÃ©voquer cette session ?")) return;
 
       setSessionsError("");
 
@@ -392,7 +404,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
 
         if (!res.ok) {
           throw new Error(
-            data?.error ?? "Impossible de révoquer la session.",
+            data?.error ?? "Impossible de rÃ©voquer la session.",
           );
         }
 
@@ -411,7 +423,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
   const runMaintenance = useCallback(async () => {
     if (
       !window.confirm(
-        "Cette opération supprimera définitivement les données dépassant la rétention de 15 ans. Continuer ?",
+        "Cette opÃ©ration supprimera dÃ©finitivement les donnÃ©es dÃ©passant la rÃ©tention de 15 ans. Continuer ?",
       )
     ) {
       return;
@@ -430,7 +442,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
 
       if (!res.ok) {
         throw new Error(
-          data?.error ?? "Impossible d'exécuter la maintenance.",
+          data?.error ?? "Impossible d'exÃ©cuter la maintenance.",
         );
       }
 
@@ -447,7 +459,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
 
   useEffect(() => {
     if (profile.role === "admin") {
-      void loadOverview();
+      setTimeout(() => { void loadOverview(); }, 0);
     }
   }, [profile.role, loadOverview]);
 
@@ -456,13 +468,13 @@ export default function AdminTab({ profile }: AdminTabProps) {
       profile.role === "admin" &&
       (section === "users" || section === "registrations")
     ) {
-      void loadUsers();
+      setTimeout(() => { void loadUsers(); }, 0);
     }
   }, [profile.role, section, loadUsers]);
 
   useEffect(() => {
     if (profile.role === "admin" && section === "sessions") {
-      void loadSessions();
+      setTimeout(() => { void loadSessions(); }, 0);
     }
   }, [profile.role, section, loadSessions]);
 
@@ -474,7 +486,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
           <div>
             <h2 className="text-lg font-semibold">Administration</h2>
             <p className="mt-1 text-sm opacity-65">
-              Accès réservé à l&apos;administrateur.
+              AccÃ¨s rÃ©servÃ© Ã  l&apos;administrateur.
             </p>
           </div>
         </div>
@@ -528,7 +540,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                 <div>
                   <h2 className="text-lg font-semibold">Vue globale</h2>
                   <p className="mt-1 text-sm opacity-65">
-                    Supervision générale de DATAYO-journal.
+                    Supervision gÃ©nÃ©rale de DATAYO-journal.
                   </p>
                 </div>
               </div>
@@ -575,9 +587,9 @@ export default function AdminTab({ profile }: AdminTabProps) {
               </div>
 
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                <StatCard label="Gaps détectés" value={overview.gaps.detected} icon={Database} />
-                <StatCard label="Gaps en récupération" value={overview.gaps.recovering} icon={RefreshCw} />
-                <StatCard label="Événements économiques" value={overview.economicEvents} icon={Activity} />
+                <StatCard label="Gaps dÃ©tectÃ©s" value={overview.gaps.detected} icon={Database} />
+                <StatCard label="Gaps en rÃ©cupÃ©ration" value={overview.gaps.recovering} icon={RefreshCw} />
+                <StatCard label="Ã‰vÃ©nements Ã©conomiques" value={overview.economicEvents} icon={Activity} />
                 <StatCard label="Backtests" value={overview.backtests} icon={BarChart3} />
               </div>
 
@@ -596,7 +608,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm opacity-60">Gaps résolus</div>
+                    <div className="text-sm opacity-60">Gaps rÃ©solus</div>
                     <div className="mt-1 text-xl font-semibold">
                       {overview.gaps.resolved}
                     </div>
@@ -617,7 +629,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                 <div>
                   <h2 className="text-lg font-semibold">Utilisateurs</h2>
                   <p className="mt-1 text-sm opacity-65">
-                    Comptes enregistrés et gestion de leurs accès.
+                    Comptes enregistrÃ©s et gestion de leurs accÃ¨s.
                   </p>
                 </div>
               </div>
@@ -649,7 +661,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
             </div>
           ) : users.length === 0 ? (
             <div className="yj-card p-6 text-sm opacity-70">
-              Aucun utilisateur trouvé.
+              Aucun utilisateur trouvÃ©.
             </div>
           ) : (
             <div className="yj-card overflow-hidden">
@@ -659,10 +671,10 @@ export default function AdminTab({ profile }: AdminTabProps) {
                     <tr>
                       <th className="px-5 py-4">Utilisateur</th>
                       <th className="px-5 py-4">Email</th>
-                      <th className="px-5 py-4">Rôle</th>
+                      <th className="px-5 py-4">RÃ´le</th>
                       <th className="px-5 py-4">Statut</th>
                       <th className="px-5 py-4">Membre depuis</th>
-                      <th className="px-5 py-4">Créé le</th>
+                      <th className="px-5 py-4">CrÃ©Ã© le</th>
                       <th className="px-5 py-4">Action</th>
                     </tr>
                   </thead>
@@ -693,7 +705,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-xs opacity-70">
-                          {user.memberSince || "—"}
+                          {user.memberSince || "â€”"}
                         </td>
                         <td className="px-5 py-4 text-xs opacity-70">
                           {formatDate(user.createdAt)}
@@ -720,7 +732,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                               disabled={actionId === user.id}
                               className="rounded-lg border border-emerald-500/20 px-3 py-1.5 text-xs text-emerald-300 hover:opacity-80 disabled:opacity-50"
                             >
-                              Réactiver
+                              RÃ©activer
                             </button>
                           ) : user.status === "pending" ? (
                             <button
@@ -753,8 +765,8 @@ export default function AdminTab({ profile }: AdminTabProps) {
                     Demandes d&apos;inscription
                   </h2>
                   <p className="mt-1 text-sm opacity-65">
-                    Examinez les nouvelles demandes et décidez de leur accès
-                    à DATAYO-journal.
+                    Examinez les nouvelles demandes et dÃ©cidez de leur accÃ¨s
+                    Ã  DATAYO-journal.
                   </p>
                 </div>
               </div>
@@ -795,7 +807,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                     Aucune demande en attente
                   </div>
                   <div className="mt-1 text-sm opacity-60">
-                    Toutes les demandes d'inscription ont été traitées.
+                    Toutes les demandes d&apos;inscription ont Ã©tÃ© traitÃ©es.
                   </div>
                 </div>
               </div>
@@ -820,7 +832,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                       </div>
 
                       <div className="mt-2 text-xs opacity-50">
-                        Demande créée le {formatDate(user.createdAt)}
+                        Demande crÃ©Ã©e le {formatDate(user.createdAt)}
                       </div>
                     </div>
 
@@ -862,7 +874,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                 <div>
                   <h2 className="text-lg font-semibold">Sessions</h2>
                   <p className="mt-1 text-sm opacity-65">
-                    Supervision des sessions actives et contrôle des accès.
+                    Supervision des sessions actives et contrÃ´le des accÃ¨s.
                   </p>
                 </div>
               </div>
@@ -899,18 +911,18 @@ export default function AdminTab({ profile }: AdminTabProps) {
               value={
                 sessions.filter(
                   (session) =>
-                    new Date(session.expiresAt).getTime() > Date.now(),
+                    new Date(session.expiresAt).getTime() > now,
                 ).length
               }
               icon={Activity}
               tone="up"
             />
             <StatCard
-              label="Expirées"
+              label="ExpirÃ©es"
               value={
                 sessions.filter(
                   (session) =>
-                    new Date(session.expiresAt).getTime() <= Date.now(),
+                    new Date(session.expiresAt).getTime() <= now,
                 ).length
               }
               icon={Database}
@@ -923,7 +935,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
             </div>
           ) : sessions.length === 0 ? (
             <div className="yj-card p-6 text-sm opacity-70">
-              Aucune session trouvée.
+              Aucune session trouvÃ©e.
             </div>
           ) : (
             <div className="yj-card overflow-hidden">
@@ -933,8 +945,8 @@ export default function AdminTab({ profile }: AdminTabProps) {
                     <tr>
                       <th className="px-5 py-4">Utilisateur</th>
                       <th className="px-5 py-4">Appareil</th>
-                      <th className="px-5 py-4">Créée le</th>
-                      <th className="px-5 py-4">Dernière activité</th>
+                      <th className="px-5 py-4">CrÃ©Ã©e le</th>
+                      <th className="px-5 py-4">DerniÃ¨re activitÃ©</th>
                       <th className="px-5 py-4">Expiration</th>
                       <th className="px-5 py-4">Statut</th>
                       <th className="px-5 py-4">Action</th>
@@ -943,7 +955,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                   <tbody>
                     {sessions.map((session) => {
                       const active =
-                        new Date(session.expiresAt).getTime() > Date.now();
+                        new Date(session.expiresAt).getTime() > now;
 
                       return (
                         <tr
@@ -978,7 +990,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                                   : "border-white/10 opacity-60"
                               }`}
                             >
-                              {active ? "Active" : "Expirée"}
+                              {active ? "Active" : "ExpirÃ©e"}
                             </span>
                           </td>
                           <td className="px-5 py-4">
@@ -989,7 +1001,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                               }
                               className="rounded-lg border border-red-500/20 px-3 py-1.5 text-xs text-red-300 hover:opacity-80"
                             >
-                              Révoquer
+                              RÃ©voquer
                             </button>
                           </td>
                         </tr>
@@ -1011,7 +1023,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
               <div>
                 <h2 className="text-lg font-semibold">Maintenance</h2>
                 <p className="mt-1 text-sm opacity-65">
-                  Entretien des données historiques et contrôle de la rétention.
+                  Entretien des donnÃ©es historiques et contrÃ´le de la rÃ©tention.
                 </p>
               </div>
             </div>
@@ -1019,17 +1031,17 @@ export default function AdminTab({ profile }: AdminTabProps) {
 
           <div className="yj-card border-amber-500/20 p-5">
             <div className="text-sm font-medium text-amber-300">
-              Politique de rétention
+              Politique de rÃ©tention
             </div>
             <p className="mt-2 text-sm opacity-75">
-              DATAYO conserve une fenêtre glissante de{" "}
-              <strong>15 ans</strong>. Les données antérieures à cette
-              période sont supprimées lors de l&apos;exécution de la
+              DATAYO conserve une fenÃªtre glissante de{" "}
+              <strong>15 ans</strong>. Les donnÃ©es antÃ©rieures Ã  cette
+              pÃ©riode sont supprimÃ©es lors de l&apos;exÃ©cution de la
               maintenance.
             </p>
             <p className="mt-3 text-sm opacity-65">
-              Cette opération concerne les bougies M1 et les événements
-              économiques. La suppression est définitive.
+              Cette opÃ©ration concerne les bougies M1 et les Ã©vÃ©nements
+              Ã©conomiques. La suppression est dÃ©finitive.
             </p>
           </div>
 
@@ -1043,11 +1055,11 @@ export default function AdminTab({ profile }: AdminTabProps) {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <div className="font-medium">
-                  Maintenance de rétention
+                  Maintenance de rÃ©tention
                 </div>
                 <p className="mt-1 text-sm opacity-65">
-                  Calcule la coupure à 15 ans et supprime les données
-                  antérieures.
+                  Calcule la coupure Ã  15 ans et supprime les donnÃ©es
+                  antÃ©rieures.
                 </p>
               </div>
 
@@ -1065,7 +1077,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
                 />
                 {maintenanceLoading
                   ? "Maintenance en cours..."
-                  : "Exécuter la maintenance"}
+                  : "ExÃ©cuter la maintenance"}
               </button>
             </div>
           </div>
@@ -1074,7 +1086,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
             <>
               <div className="yj-card p-5">
                 <div className="text-sm opacity-60">
-                  Dernière exécution
+                  DerniÃ¨re exÃ©cution
                 </div>
                 <div className="mt-2 text-sm">
                   Date de coupure :{" "}
@@ -1088,12 +1100,12 @@ export default function AdminTab({ profile }: AdminTabProps) {
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <StatCard
-                  label="Bougies M1 supprimées"
+                  label="Bougies M1 supprimÃ©es"
                   value={maintenanceResult.candlesDeleted}
                   icon={Database}
                 />
                 <StatCard
-                  label="Événements économiques supprimés"
+                  label="Ã‰vÃ©nements Ã©conomiques supprimÃ©s"
                   value={maintenanceResult.eventsDeleted}
                   icon={Activity}
                 />
