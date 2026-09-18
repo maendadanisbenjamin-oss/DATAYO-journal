@@ -71,6 +71,23 @@ describe("backtest anti-future-leak", () => {
     expect(result.positions.length).toBeGreaterThan(0);
   });
 
+  it("falls back to safe defaults for invalid stop and target rules", () => {
+    const candles = [
+      { ts: "2024-03-12T13:00:00Z", open: 100, high: 101, low: 99, close: 101 },
+      { ts: "2024-03-12T13:01:00Z", open: 101, high: 102, low: 100, close: 101.5 },
+    ];
+
+    const result = runBacktest({
+      candles,
+      initialCapital: 10000,
+      rules: { stopPct: Number.NaN, targetRR: Number.NaN },
+    });
+
+    expect(result.positions).toHaveLength(1);
+    expect(result.positions[0].stopLoss).toBe(100.7475);
+    expect(result.positions[0].takeProfit).toBeCloseTo(101.505);
+  });
+
   it("blocks an entry around a high-impact event that was already known", () => {
     const candles = [
       { ts: "2024-03-12T13:00:00Z", open: 100, high: 101, low: 99, close: 101 },

@@ -50,14 +50,26 @@ export function openPosition(input: PositionRequest): SimulatedPosition {
   if (takeProfit !== null && !Number.isFinite(takeProfit)) {
     throw new Error("Take Profit invalide");
   }
+  if (!Number.isFinite(commission) || commission < 0) {
+    throw new Error("Commission invalide");
+  }
   if (input.direction === "long" && stopLoss !== null && stopLoss >= entryPrice) {
     throw new Error("Un Long doit avoir un Stop Loss inférieur à l'entrée");
   }
   if (input.direction === "short" && stopLoss !== null && stopLoss <= entryPrice) {
     throw new Error("Un Short doit avoir un Stop Loss supérieur à l'entrée");
   }
+  if (input.direction === "long" && takeProfit !== null && takeProfit <= entryPrice) {
+    throw new Error("Un Long doit avoir un Take Profit supérieur à l'entrée");
+  }
+  if (input.direction === "short" && takeProfit !== null && takeProfit >= entryPrice) {
+    throw new Error("Un Short doit avoir un Take Profit inférieur à l'entrée");
+  }
   const derivedRisk = stopLoss === null ? 0 : Math.abs(entryPrice - stopLoss) * quantity;
   const riskAmount = Number(input.riskAmount ?? derivedRisk);
+  if (!Number.isFinite(riskAmount) || riskAmount < 0) {
+    throw new Error("Risque invalide");
+  }
   const openedAt = new Date(input.openedAt);
   if (Number.isNaN(openedAt.getTime())) throw new Error("Date d'ouverture invalide");
   return {
@@ -101,6 +113,7 @@ export function closePosition(
   closedAt: Date | string,
   status: "closed" | "stopped" | "target" = "closed"
 ): SimulatedPosition {
+  if (position.status !== "open") { throw new Error("La position est déjà clôturée"); }
   const closeTime = new Date(closedAt);
   if (!Number.isFinite(exitPrice) || Number.isNaN(closeTime.getTime())) throw new Error("Clôture invalide");
   const raw = position.direction === "long" ? (exitPrice - position.entryPrice) * position.quantity : (position.entryPrice - exitPrice) * position.quantity;
@@ -113,6 +126,26 @@ export function updateStops(position: SimulatedPosition, patch: { stopLoss?: num
   if (position.status !== "open") throw new Error("La position est déjà clôturée");
   const stopLoss = patch.stopLoss === undefined ? position.stopLoss : patch.stopLoss;
   const takeProfit = patch.takeProfit === undefined ? position.takeProfit : patch.takeProfit;
+
+  if (stopLoss !== null && !Number.isFinite(stopLoss)) {
+    throw new Error("Stop Loss invalide");
+  }
+  if (takeProfit !== null && !Number.isFinite(takeProfit)) {
+    throw new Error("Take Profit invalide");
+  }
+  if (position.direction === "long" && stopLoss !== null && stopLoss >= position.entryPrice) {
+    throw new Error("Un Long doit avoir un Stop Loss inférieur à l'entrée");
+  }
+  if (position.direction === "short" && stopLoss !== null && stopLoss <= position.entryPrice) {
+    throw new Error("Un Short doit avoir un Stop Loss supérieur à l'entrée");
+  }
+  if (position.direction === "long" && takeProfit !== null && takeProfit <= position.entryPrice) {
+    throw new Error("Un Long doit avoir un Take Profit supérieur à l'entrée");
+  }
+  if (position.direction === "short" && takeProfit !== null && takeProfit >= position.entryPrice) {
+    throw new Error("Un Short doit avoir un Take Profit inférieur à l'entrée");
+  }
+
   return {
     ...position,
     stopLoss,

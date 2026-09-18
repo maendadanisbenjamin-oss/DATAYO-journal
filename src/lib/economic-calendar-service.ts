@@ -81,46 +81,58 @@ export async function upsertEconomicEvent(profileId: string, input: EconomicEven
     throw new Error("Cet événement est hors de la fenêtre active de rétention de 15 ans");
   }
 
-  const [existing] = await db
-    .select()
-    .from(economicEvents)
-    .where(and(eq(economicEvents.sourceId, source.id), eq(economicEvents.externalId, item.externalId)));
+  const event = await db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(economicEvents)
+      .where(
+        and(
+          eq(economicEvents.sourceId, source.id),
+          eq(economicEvents.externalId, item.externalId),
+        ),
+      );
 
-  let event;
-  if (existing) {
-    [event] = await db
-      .update(economicEvents)
-      .set({ ...item, retrievedAt: new Date(), updatedAt: new Date() })
-      .where(eq(economicEvents.id, existing.id))
-      .returning();
-  } else {
-    [event] = await db
-      .insert(economicEvents)
-      .values({ sourceId: source.id, ...item, retrievedAt: new Date() })
-      .returning();
-  }
+    let event;
+    if (existing) {
+      [event] = await tx
+        .update(economicEvents)
+        .set({ ...item, retrievedAt: new Date(), updatedAt: new Date() })
+        .where(eq(economicEvents.id, existing.id))
+        .returning();
+    } else {
+      [event] = await tx
+        .insert(economicEvents)
+        .values({ sourceId: source.id, ...item, retrievedAt: new Date() })
+        .returning();
+    }
 
-  // Revision snapshots enforce correct time-aware values during replay/backtest.
-  await db.insert(economicEventRevisions).values({
-    eventId: event.id,
-    knownAt: item.publishedAt ?? item.knownAt,
-    previous: item.previous,
-    forecast: item.forecast,
-    actual: item.actual,
-    revision: item.revision,
-    status: item.status,
-    rawPayload: item.metadata,
-  });
+    if (!event) {
+      throw new Error("Impossible d'enregistrer l'événement économique");
+    }
 
-  await db.insert(economicCalendarImports).values({
-    profileId,
-    sourceId: source.id,
-    mode: existing ? "sync" : "historical",
-    status: "completed",
-    requestedFrom: item.scheduledAt,
-    requestedTo: item.scheduledAt,
-    rowsReceived: 1,
-    rowsAccepted: 1,
+    await tx.insert(economicEventRevisions).values({
+      eventId: event.id,
+      knownAt: item.publishedAt ?? item.knownAt,
+      previous: item.previous,
+      forecast: item.forecast,
+      actual: item.actual,
+      revision: item.revision,
+      status: item.status,
+      rawPayload: item.metadata,
+    });
+
+    await tx.insert(economicCalendarImports).values({
+      profileId,
+      sourceId: source.id,
+      mode: existing ? "sync" : "historical",
+      status: "completed",
+      requestedFrom: item.scheduledAt,
+      requestedTo: item.scheduledAt,
+      rowsReceived: 1,
+      rowsAccepted: 1,
+    });
+
+    return event;
   });
 
   await runRetention();
@@ -148,18 +160,19 @@ export async function listEconomicEvents(input: {
   if (input.country) conditions.push(eq(economicEvents.country, input.country.toUpperCase()));
   if (input.importance && IMPORTANCES.has(input.importance)) conditions.push(eq(economicEvents.importance, input.importance));
   if (input.asOf) conditions.push(lte(economicEvents.knownAt, input.asOf));
+  if (input.search?.trim()) {
+    const q = `%${input.search.trim().toLowerCase()}%`;
+    conditions.push(
+      sql`(lower(${economicEvents.title}) like ${q} or lower(${economicEvents.category}) like ${q})`,
+    );
+  }
 
-  let rows = await db
+  const rows = await db
     .select()
     .from(economicEvents)
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(asc(economicEvents.scheduledAt))
     .limit(Math.min(Math.max(input.limit ?? 300, 1), 1000));
-
-  if (input.search) {
-    const q = input.search.toLowerCase();
-    rows = rows.filter((row) => row.title.toLowerCase().includes(q) || row.category.toLowerCase().includes(q));
-  }
   if (!input.asOf || !rows.length) return rows;
 
   const revisions = await db
@@ -255,21 +268,24 @@ export async function associateTradeEconomicEvents(tradeId: string) {
     .from(economicEvents)
     .where(and(inArray(economicEvents.currency, currencies), gte(economicEvents.scheduledAt, from), lte(economicEvents.scheduledAt, to)));
 
-  await db.delete(tradeEconomicEvents).where(eq(tradeEconomicEvents.tradeId, tradeId));
-  if (!events.length) return [];
+  await db.transaction(async (tx) => {
+    await tx.delete(tradeEconomicEvents).where(eq(tradeEconomicEvents.tradeId, tradeId));
+    if (!events.length) return;
 
-  await db.insert(tradeEconomicEvents).values(
-    events.map((event) => {
-      const minutesFromEntry = Math.round((event.scheduledAt.getTime() - entry.getTime()) / 60_000);
-      const relation =
-        event.scheduledAt < entry
-          ? "before_entry"
-          : event.scheduledAt <= end
-          ? "during"
-          : "after_exit";
-      return { tradeId, eventId: event.id, relation, minutesFromEntry };
-    })
-  );
+    await tx.insert(tradeEconomicEvents).values(
+      events.map((event) => {
+        const minutesFromEntry = Math.round((event.scheduledAt.getTime() - entry.getTime()) / 60_000);
+        const relation =
+          event.scheduledAt < entry
+            ? "before_entry"
+            : event.scheduledAt <= end
+            ? "during"
+            : "after_exit";
+        return { tradeId, eventId: event.id, relation, minutesFromEntry };
+      })
+    );
+  });
+
   return events;
 }
 

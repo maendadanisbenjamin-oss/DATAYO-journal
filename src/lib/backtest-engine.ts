@@ -72,8 +72,10 @@ export function runBacktest(input: {
   let equity = input.initialCapital;
   let peak = equity;
 
-  const stopPct = Math.max(0.00001, Number(rules.stopPct ?? 0.25)) / 100;
-  const targetRR = Math.max(0.1, Number(rules.targetRR ?? 2));
+  const rawStopPct = Number(rules.stopPct ?? 0.25);
+  const rawTargetRR = Number(rules.targetRR ?? 2);
+  const stopPct = (Number.isFinite(rawStopPct) ? Math.max(0.00001, rawStopPct) : 0.25) / 100;
+  const targetRR = Number.isFinite(rawTargetRR) ? Math.max(0.1, rawTargetRR) : 2;
   const riskPct = Math.max(0, Number(rules.riskPct ?? 1));
   const commission = Math.max(0, Number(rules.commissionPerOrder ?? 0));
 

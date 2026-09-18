@@ -3136,7 +3136,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'TP touchÃƒÂ©'"
+          "default": "'TP touché'"
         },
         "screenshots": {
           "name": "screenshots",
