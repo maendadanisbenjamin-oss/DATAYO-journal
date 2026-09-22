@@ -1,5 +1,5 @@
 ﻿import { NextResponse } from "next/server";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { profiles, sessions } from "@/db/schema";
 import { publicProfile, requireAdmin, unauthorized } from "@/lib/auth";
@@ -11,6 +11,8 @@ const VALID_ACTIONS = new Set([
   "reject",
   "suspend",
   "reactivate",
+  "promote",
+  "demote",
 ]);
 
 export async function GET() {
@@ -48,9 +50,17 @@ export async function PATCH(req: Request) {
     );
   }
 
-  if (id === admin.id && (action === "suspend" || action === "reject")) {
+  if (
+    id === admin.id &&
+    (action === "suspend" ||
+      action === "reject" ||
+      action === "demote")
+  ) {
     return NextResponse.json(
-      { error: "Vous ne pouvez pas suspendre ou rejeter votre propre compte administrateur." },
+      {
+        error:
+          "Vous ne pouvez pas suspendre, rejeter ou rétrograder votre propre compte administrateur.",
+      },
       { status: 400 },
     );
   }
@@ -64,6 +74,74 @@ export async function PATCH(req: Request) {
     return NextResponse.json(
       { error: "Utilisateur introuvable" },
       { status: 404 },
+    );
+  }
+
+  if (action === "promote") {
+    if (target.role === "admin") {
+      return NextResponse.json(
+        { error: "Cet utilisateur est déjà administrateur." },
+        { status: 400 },
+      );
+    }
+
+    const [updated] = await db
+      .update(profiles)
+      .set({
+        role: "admin",
+      })
+      .where(eq(profiles.id, id))
+      .returning();
+
+    return NextResponse.json({ profile: publicProfile(updated) });
+  }
+
+  if (action === "demote") {
+    if (target.role !== "admin") {
+      return NextResponse.json(
+        { error: "Cet utilisateur n'est pas administrateur." },
+        { status: 400 },
+      );
+    }
+
+    const activeAdmins = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(
+        and(
+          eq(profiles.role, "admin"),
+          eq(profiles.status, "active"),
+        ),
+      );
+
+    if (activeAdmins.length <= 1) {
+      return NextResponse.json(
+        {
+          error:
+            "Impossible de rétrograder le dernier administrateur actif.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const [updated] = await db
+      .update(profiles)
+      .set({
+        role: "member",
+      })
+      .where(eq(profiles.id, id))
+      .returning();
+
+    return NextResponse.json({ profile: publicProfile(updated) });
+  }
+
+  if (id === admin.id && (action === "suspend" || action === "reject")) {
+    return NextResponse.json(
+      {
+        error:
+          "Vous ne pouvez pas suspendre ou rejeter votre propre compte administrateur.",
+      },
+      { status: 400 },
     );
   }
 
@@ -120,7 +198,10 @@ export async function PATCH(req: Request) {
   if (action === "suspend") {
     if (target.role === "admin") {
       return NextResponse.json(
-        { error: "Un compte administrateur ne peut pas être suspendu depuis cette interface." },
+        {
+          error:
+            "Un compte administrateur ne peut pas être suspendu depuis cette interface.",
+        },
         { status: 400 },
       );
     }
@@ -140,7 +221,10 @@ export async function PATCH(req: Request) {
 
   if (target.status === "pending") {
     return NextResponse.json(
-      { error: "Une demande en attente doit d'abord être approuvée ou rejetée." },
+      {
+        error:
+          "Une demande en attente doit d'abord être approuvée ou rejetée.",
+      },
       { status: 400 },
     );
   }

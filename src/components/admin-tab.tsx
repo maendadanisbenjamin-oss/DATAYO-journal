@@ -285,7 +285,7 @@ export default function AdminTab({ profile }: AdminTabProps) {
   const updateUserStatus = useCallback(
     async (
       id: string,
-      action: "approve" | "reject" | "suspend" | "reactivate",
+      action: "approve" | "reject" | "suspend" | "reactivate" | "promote" | "demote",
       reason = "",
     ) => {
       setActionId(id);
@@ -381,6 +381,36 @@ export default function AdminTab({ profile }: AdminTabProps) {
       }
 
       await updateUserStatus(user.id, "reactivate");
+    },
+    [updateUserStatus],
+  );
+
+  const promoteUser = useCallback(
+    async (user: AdminUser) => {
+      if (
+        !window.confirm(
+          `Promouvoir ${user.displayName} au rôle d'administrateur ?`,
+        )
+      ) {
+        return;
+      }
+
+      await updateUserStatus(user.id, "promote");
+    },
+    [updateUserStatus],
+  );
+
+  const demoteUser = useCallback(
+    async (user: AdminUser) => {
+      if (
+        !window.confirm(
+          `Révoquer les droits administrateur de ${user.displayName} ?`,
+        )
+      ) {
+        return;
+      }
+
+      await updateUserStatus(user.id, "demote");
     },
     [updateUserStatus],
   );
@@ -691,11 +721,8 @@ export default function AdminTab({ profile }: AdminTabProps) {
                           {user.email}
                         </td>
                         <td className="px-5 py-4">
-                          <span className="rounded-full border border-white/10 px-2.5 py-1 text-xs">
-                            {user.role ?? "member"}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
+                          {user.role === "admin" ? "Administrateur" : "Membre"}
+                        </td>                        <td className="px-5 py-4">
                           <span
                             className={`rounded-full border px-2.5 py-1 text-xs ${statusClass(
                               user.status,
@@ -712,37 +739,61 @@ export default function AdminTab({ profile }: AdminTabProps) {
                         </td>
                         <td className="px-5 py-4">
                           {user.role === "admin" ? (
-                            <span className="text-xs opacity-50">
-                              Compte administrateur
-                            </span>
-                          ) : user.status === "active" ? (
-                            <button
-                              type="button"
-                              onClick={() => void suspendUser(user)}
-                              disabled={actionId === user.id}
-                              className="rounded-lg border border-orange-500/20 px-3 py-1.5 text-xs text-orange-300 hover:opacity-80 disabled:opacity-50"
-                            >
-                              Suspendre
-                            </button>
-                          ) : user.status === "suspended" ||
-                            user.status === "rejected" ? (
-                            <button
-                              type="button"
-                              onClick={() => void reactivateUser(user)}
-                              disabled={actionId === user.id}
-                              className="rounded-lg border border-emerald-500/20 px-3 py-1.5 text-xs text-emerald-300 hover:opacity-80 disabled:opacity-50"
-                            >
-                              Réactiver
-                            </button>
-                          ) : user.status === "pending" ? (
-                            <button
-                              type="button"
-                              onClick={() => setSection("registrations")}
-                              className="rounded-lg border border-amber-500/20 px-3 py-1.5 text-xs text-amber-300 hover:opacity-80"
-                            >
-                              Examiner
-                            </button>
-                          ) : null}
+                            user.id === profile.id ? (
+                              <span className="text-xs opacity-50">
+                                Compte administrateur actuel
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => void demoteUser(user)}
+                                disabled={actionId === user.id}
+                                className="rounded-lg border border-red-500/20 px-3 py-1.5 text-xs text-red-300 hover:opacity-80 disabled:opacity-50"
+                              >
+                                Révoquer administrateur
+                              </button>
+                            )
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void promoteUser(user)}
+                                disabled={actionId === user.id}
+                                className="rounded-lg border border-emerald-500/20 px-3 py-1.5 text-xs text-emerald-300 hover:opacity-80 disabled:opacity-50"
+                              >
+                                Promouvoir
+                              </button>
+
+                              {user.status === "active" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void suspendUser(user)}
+                                  disabled={actionId === user.id}
+                                  className="rounded-lg border border-orange-500/20 px-3 py-1.5 text-xs text-orange-300 hover:opacity-80 disabled:opacity-50"
+                                >
+                                  Suspendre
+                                </button>
+                              ) : user.status === "suspended" ||
+                                user.status === "rejected" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void reactivateUser(user)}
+                                  disabled={actionId === user.id}
+                                  className="rounded-lg border border-emerald-500/20 px-3 py-1.5 text-xs text-emerald-300 hover:opacity-80 disabled:opacity-50"
+                                >
+                                  Réactiver
+                                </button>
+                              ) : user.status === "pending" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSection("registrations")}
+                                  className="rounded-lg border border-amber-500/20 px-3 py-1.5 text-xs text-amber-300 hover:opacity-80"
+                                >
+                                  Examiner
+                                </button>
+                              ) : null}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
