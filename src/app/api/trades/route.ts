@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { accounts, tradeAccounts, trades } from "@/db/schema";
 import { requireUser, unauthorized } from "@/lib/auth";
@@ -82,6 +82,11 @@ export async function POST(req: Request) {
   }
 
   const legacyAccount = normalizedAccounts[0];
+
+  let legacyLotSize: number | null = null;
+  let legacyRiskPct: number = 1;
+  let legacyRMultiple: number = 0;
+  let legacyPnl: number = 0;
 
   const tradeData = {
     ...data,
@@ -170,6 +175,13 @@ export async function POST(req: Request) {
         pnl = result.pnlAccount;
       }
 
+    if (item.accountId === legacyAccount.accountId) {
+      legacyLotSize = item.lotSize;
+      legacyRiskPct = riskPct ?? 1;
+      legacyRMultiple = rMultiple ?? 0;
+      legacyPnl = pnl ?? 0;
+    }
+
       tradeAccountRows.push({
         tradeId: createdTrade.id,
         accountId: item.accountId,
@@ -183,7 +195,18 @@ export async function POST(req: Request) {
 
     await tx.insert(tradeAccounts).values(tradeAccountRows);
 
-    return createdTrade;
+    const [syncedTrade] = await tx
+      .update(trades)
+      .set({
+        lotSize: legacyLotSize,
+        riskPct: legacyRiskPct,
+        rMultiple: legacyRMultiple,
+        pnl: legacyPnl,
+      })
+      .where(eq(trades.id, createdTrade.id))
+      .returning();
+
+    return syncedTrade;
   });
 
   await associateTradeEconomicEvents(row.id);

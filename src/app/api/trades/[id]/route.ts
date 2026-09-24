@@ -121,6 +121,11 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   const legacyAccount = normalizedAccounts[0];
 
+  let legacyLotSize: number | null = null;
+  let legacyRiskPct: number = 1;
+  let legacyRMultiple: number = 0;
+  let legacyPnl: number = 0;
+
   const tradeData = {
     ...data,
     // Transitional compatibility with the legacy mono-account columns.
@@ -213,6 +218,13 @@ export async function PATCH(req: Request, { params }: Ctx) {
         pnl = result.pnlAccount;
       }
 
+    if (item.accountId === legacyAccount.accountId) {
+      legacyLotSize = item.lotSize;
+      legacyRiskPct = riskPct ?? 1;
+      legacyRMultiple = rMultiple ?? 0;
+      legacyPnl = pnl ?? 0;
+    }
+
       tradeAccountRows.push({
         tradeId: id,
         accountId: item.accountId,
@@ -230,7 +242,18 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
     await tx.insert(tradeAccounts).values(tradeAccountRows);
 
-    return updatedTrade;
+    const [syncedTrade] = await tx
+      .update(trades)
+      .set({
+        lotSize: legacyLotSize,
+        riskPct: legacyRiskPct,
+        rMultiple: legacyRMultiple,
+        pnl: legacyPnl,
+      })
+      .where(eq(trades.id, id))
+      .returning();
+
+    return syncedTrade;
   });
 
   await associateTradeEconomicEvents(row.id);
