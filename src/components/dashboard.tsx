@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { type Lang, t as tr } from "@/lib/i18n";
-import type { Account, AccountInput, Bootstrap, Profile, Tab, Trade, TradeInput } from "@/lib/types";
+import type { Account, AccountInput, Bootstrap, Profile, Tab, Trade, TradeAccount, TradeAccountInput, TradeInput } from "@/lib/types";
 import AuthScreen from "./auth-screen";
 import MarketClock from "./market-clock";
 import { AccountModal, ProfileModal, TradeDetailModal, TradeModal } from "./modals";
@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [tradeAccounts, setTradeAccounts] = useState<TradeAccount[]>([]);
   const [devMode, setDevMode] = useState(false);
 
   // Modals state
@@ -99,6 +100,7 @@ export default function Dashboard() {
         setProfile(j.profile);
         setAccounts(j.accounts);
         setTrades(j.trades);
+        setTradeAccounts(j.tradeAccounts);
         setDevMode(j.devMode);
         setError(null);
       } catch {
@@ -182,12 +184,23 @@ export default function Dashboard() {
     return j;
   };
 
-  const saveTrade = async (input: TradeInput, id?: string) => {
+  const saveTrade = async (
+  input: TradeInput,
+  accountInputs: TradeAccountInput[],
+  id?: string
+) => {
     try {
       const row: Trade = id
-        ? await api(`/api/trades/${id}`, "PATCH", input)
-        : await api("/api/trades", "POST", input);
+        ? await api(`/api/trades/${id}`, "PATCH", {
+            ...input,
+            accountInputs,
+          })
+        : await api("/api/trades", "POST", {
+            ...input,
+            accountInputs,
+          });
       setTrades((s) => (id ? s.map((x) => (x.id === id ? row : x)) : [...s, row]));
+      await load(true);
       setTradeModal({ open: false, trade: null });
       toast(d.saved);
     } catch (e) {
@@ -200,6 +213,7 @@ export default function Dashboard() {
     try {
       await api(`/api/trades/${tr_.id}`, "DELETE");
       setTrades((s) => s.filter((x) => x.id !== tr_.id));
+      setTradeAccounts((s) => s.filter((x) => x.tradeId !== tr_.id));
       toast(d.deleted);
     } catch (e) {
       toast(e instanceof Error ? e.message : d.error, "err");
@@ -224,7 +238,7 @@ export default function Dashboard() {
     try {
       await api(`/api/accounts/${a.id}`, "DELETE");
       setAccounts((s) => s.filter((x) => x.id !== a.id));
-      setTrades((s) => s.filter((x) => x.accountId !== a.id));
+      await load(true);
       toast(d.deleted);
     } catch (e) {
       toast(e instanceof Error ? e.message : d.error, "err");
@@ -248,6 +262,7 @@ export default function Dashboard() {
     setProfile(null);
     setAccounts([]);
     setTrades([]);
+    setTradeAccounts([]);
   };
 
   const onAuth = async (p: Profile) => {
@@ -392,6 +407,7 @@ export default function Dashboard() {
           d={d}
           accounts={accounts}
           trade={tradeModal.trade}
+          tradeAccounts={tradeAccounts}
           onClose={() => setTradeModal({ open: false, trade: null })}
           onSave={saveTrade}
         />
@@ -401,7 +417,8 @@ export default function Dashboard() {
       {detailModal.open && detailModal.trade && (
         <TradeDetailModal
           trade={detailModal.trade}
-          accountName={accounts.find((a) => a.id === detailModal.trade?.accountId)?.name ?? "—"}
+          accounts={accounts}
+          tradeAccounts={tradeAccounts}
           onClose={() => setDetailModal({ open: false, trade: null })}
           onEdit={() => {
             const tr_ = detailModal.trade;

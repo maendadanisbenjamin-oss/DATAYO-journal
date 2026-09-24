@@ -19,8 +19,9 @@ export function parseTrade(b: Record<string, unknown>) {
   const direction = b.direction === "short" ? "short" : "long";
   const session = ["asia", "london", "newyork"].includes(String(b.session)) ? String(b.session) : "london";
   const tradingType: TradingType = ["Day Trade", "Scalp", "Swing"].includes(String(b.tradingType)) ? (String(b.tradingType) as TradingType) : "Day Trade";
-  const planRespect: PlanRespect = ["Oui", "Non", "Partiel"].includes(String(b.planRespect)) ? (String(b.planRespect) as PlanRespect) : "Oui";
-  const tradeOutcome: TradeOutcome = ["TP touché", "SL touché", "BE", "Sortie manuelle"].includes(String(b.tradeOutcome)) ? (String(b.tradeOutcome) as TradeOutcome) : num(b.pnl) > 0 ? "TP touché" : num(b.pnl) < 0 ? "SL touché" : "BE";
+  const planRespectNum = Number(b.planRespect);
+  const planRespect: PlanRespect = ([1, 2, 3, 4, 5] as number[]).includes(planRespectNum) ? (planRespectNum as PlanRespect) : 5;
+  const tradeOutcome: TradeOutcome = ["En cours", "TP touché", "SL touché", "BE", "Sortie manuelle"].includes(String(b.tradeOutcome)) ? (String(b.tradeOutcome) as TradeOutcome) : num(b.pnl) > 0 ? "TP touché" : num(b.pnl) < 0 ? "SL touché" : "BE";
 
   let screenshots = "{}";
   if (typeof b.screenshots === "string") {

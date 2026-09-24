@@ -24,8 +24,8 @@ export type Account = {
 export type Direction = "long" | "short";
 export type Session = "asia" | "london" | "newyork";
 export type TradingType = "Day Trade" | "Scalp" | "Swing";
-export type PlanRespect = "Oui" | "Non" | "Partiel";
-export type TradeOutcome = "TP touché" | "SL touché" | "BE" | "Sortie manuelle";
+export type PlanRespect = 1 | 2 | 3 | 4 | 5;
+export type TradeOutcome = "En cours" | "TP touché" | "SL touché" | "BE" | "Sortie manuelle";
 export type TradingMode = "live" | "replay" | "backtest";
 
 export type Screenshots = {
@@ -80,8 +80,23 @@ export type Trade = {
   lessonsLearned: string;
   createdAt: string;
 };
+export type TradeAccount = {
+  id: string;
+  tradeId: string;
+  accountId: string;
+  lotSize: number | null;
+  riskPct: number | null;
+  riskAmount: number | null;
+  rMultiple: number | null;
+  pnl: number | null;
+  createdAt: string;
+};
 
-export type TradeInput = Omit<Trade, "id" | "createdAt">;
+export type TradeAccountInput = {
+  accountId: string;
+  lotSize: number | null;
+};
+export type TradeInput = Omit<Trade, "id" | "createdAt" | "riskPct" | "rMultiple" | "pnl" | "lotSize">;
 export type AccountInput = Omit<Account, "id" | "profileId" | "createdAt">;
 
 export type SessionRow = {
@@ -96,9 +111,9 @@ export type Bootstrap = {
   profile: Profile | null;
   accounts: Account[];
   trades: Trade[];
+  tradeAccounts: TradeAccount[];
   devMode: boolean;
 };
-
 export type Tab =
   | "profile_accounts"
   | "evolution_performance"
@@ -112,6 +127,18 @@ export type Tab =
 // ---------------------------------------------------------------------------
 // Market data & economic calendar transport types.
 // ---------------------------------------------------------------------------
+export type InstrumentSpec = {
+  id: string;
+  instrumentId: string;
+  broker: string;
+  calculationModel: "price_delta_value" | string;
+  quantityUnit: "lot" | "unit" | "contract" | string;
+  valuePerPriceUnit: number;
+  priceIncrement: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type Instrument = {
   id: string;
   symbol: string;
@@ -121,13 +148,13 @@ export type Instrument = {
   quoteCurrency: string;
   providerSymbols: string;
   marketHours: "weekday" | "continuous" | "custom" | string;
-  availableFrom: string | null;
-  availableTo: string | null;
+  availableFrom: Date | null;
+  availableTo: Date | null;
   availableResolutions: string;
   qualityNotes: string;
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type MarketCandle = {

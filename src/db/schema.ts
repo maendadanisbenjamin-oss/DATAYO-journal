@@ -1,4 +1,4 @@
-﻿import {
+import {
   AnyPgColumn,
   boolean,
   index,
@@ -115,7 +115,7 @@ export const trades = pgTable(
     emotionalState: text("emotional_state").notNull().default("Calme"),
     htfBias: text("htf_bias").notNull().default(""),
     managementNotes: text("management_notes").notNull().default(""),
-    planRespect: text("plan_respect").notNull().default("Oui"),
+    planRespect: integer("plan_respect").notNull().default(5),
     tradeOutcome: text("trade_outcome").notNull().default("TP touché"),
 
     // Screenshots and conclusions
@@ -129,6 +129,30 @@ export const trades = pgTable(
     index("trades_date_idx").on(t.date),
     index("trades_mode_idx").on(t.mode),
     index("trades_opened_at_idx").on(t.openedAt),
+  ]
+);
+
+export const tradeAccounts = pgTable(
+  "trade_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tradeId: uuid("trade_id")
+      .notNull()
+      .references(() => trades.id, { onDelete: "cascade" }),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    lotSize: real("lot_size"),
+    riskPct: real("risk_pct"),
+    riskAmount: real("risk_amount"),
+    rMultiple: real("r_multiple"),
+    pnl: real("pnl"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("trade_accounts_trade_idx").on(t.tradeId),
+    index("trade_accounts_account_idx").on(t.accountId),
+    uniqueIndex("trade_accounts_trade_account_uidx").on(t.tradeId, t.accountId),
   ]
 );
 
@@ -157,6 +181,26 @@ export const instruments = pgTable(
   (t) => [uniqueIndex("instruments_symbol_idx").on(t.symbol), index("instruments_asset_class_idx").on(t.assetClass)]
 );
 
+export const instrumentSpecs = pgTable(
+  "instrument_specs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    instrumentId: uuid("instrument_id")
+      .notNull()
+      .references(() => instruments.id, { onDelete: "cascade" }),
+    broker: text("broker").notNull(),
+    calculationModel: text("calculation_model").notNull().default("price_delta_value"),
+    quantityUnit: text("quantity_unit").notNull().default("lot"),
+    valuePerPriceUnit: real("value_per_price_unit").notNull(),
+    priceIncrement: real("price_increment").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("instrument_specs_instrument_broker_uidx").on(t.instrumentId, t.broker),
+    index("instrument_specs_instrument_idx").on(t.instrumentId),
+  ]
+);
 export const dataSources = pgTable(
   "data_sources",
   {

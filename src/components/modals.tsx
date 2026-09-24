@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ExternalLink,
   Image as ImageIcon,
+  Star,
   Trash2,
   UploadCloud,
   X,
@@ -27,24 +28,51 @@ import {
   type Screenshots,
   type SessionRow,
   type Trade,
+  type TradeAccount,
+  type TradeAccountInput,
   type TradeInput,
 } from "@/lib/types";
 import { Avatar, Field, Modal, compressImage } from "./ui";
 
 const today = () => new Date().toISOString().slice(0, 10);
+function StarRating({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: 1 | 2 | 3 | 4 | 5) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange(n as 1 | 2 | 3 | 4 | 5)}
+          className="p-0.5 transition hover:scale-110"
+          aria-label={`${n} / 5`}
+        >
+          <Star size={20} className={n <= value ? "fill-gold text-gold" : "text-mut"} />
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function TradeModal({
   d,
   accounts,
   trade,
+  tradeAccounts,
   onClose,
   onSave,
 }: {
   d: Dict;
   accounts: Account[];
   trade: Trade | null;
+  tradeAccounts: TradeAccount[];
   onClose: () => void;
-  onSave: (t: TradeInput, id?: string) => Promise<void>;
+  onSave: (t: TradeInput, accounts: TradeAccountInput[], id?: string) => Promise<void>;
 }) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
@@ -69,9 +97,6 @@ export function TradeModal({
       direction: "long",
       session: "london",
       setup: "Silver Bullet",
-      riskPct: 1,
-      rMultiple: 2,
-      pnl: 200,
       notes: "",
 
       tradingType: "Day Trade",
@@ -79,7 +104,6 @@ export function TradeModal({
       entryPrice: null,
       stopLoss: null,
       takeProfit: null,
-      lotSize: null,
       exitPrice: null,
       rrRatio: null,
 
@@ -92,7 +116,7 @@ export function TradeModal({
       emotionalState: "Calme & Patient",
       htfBias: "",
       managementNotes: "",
-      planRespect: "Oui",
+      planRespect: 5,
       tradeOutcome: "TP touché",
 
       screenshots: JSON.stringify(initialScreenshots),
@@ -102,10 +126,21 @@ export function TradeModal({
 
   const [screenshots, setScreenshots] = useState<Screenshots>(initialScreenshots);
   const [busy, setBusy] = useState(false);
-
+  const [tradeAccountInputs, setTradeAccountInputs] = useState<TradeAccountInput[]>(
+  trade
+    ? tradeAccounts
+        .filter((ta) => ta.tradeId === trade.id)
+        .map((ta) => ({
+          accountId: ta.accountId,
+          lotSize: ta.lotSize,
+        }))
+    : accounts[0]
+      ? [{ accountId: accounts[0].id, lotSize: null }]
+      : []
+);
   const up = <K extends keyof TradeInput>(k: K, v: TradeInput[K]) => setF((s) => ({ ...s, [k]: v }));
 
-  // Auto-calculate RR, Result ($) and Return R if prices are filled
+  // Auto-calculate expected RR if entry, stop loss and take profit are filled
   useEffect(() => {
     const entry = f.entryPrice;
     const sl = f.stopLoss;
@@ -119,11 +154,6 @@ export function TradeModal({
           const rewardDistance = Math.abs(tp - entry);
           const rr = Number((rewardDistance / riskDistance).toFixed(2));
           setTimeout(() => up("rrRatio", rr), 0);
-        }
-        if (exit) {
-          const actualReward = f.direction === "long" ? exit - entry : entry - exit;
-          const r = Number((actualReward / riskDistance).toFixed(2));
-          setTimeout(() => up("rMultiple", r), 0);
         }
       }
     }
@@ -148,14 +178,18 @@ export function TradeModal({
   };
 
   const submit = async () => {
-    if (!f.symbol || !f.date || !f.accountId) return;
-    setBusy(true);
-    try {
-      await onSave({ ...f, screenshots: JSON.stringify(screenshots) }, trade?.id);
-    } finally {
-      setBusy(false);
-    }
-  };
+  if (!f.symbol || !f.date || tradeAccountInputs.length === 0) return;
+  setBusy(true);
+  try {
+    await onSave(
+      { ...f, screenshots: JSON.stringify(screenshots) },
+      tradeAccountInputs,
+      trade?.id
+    );
+  } finally {
+    setBusy(false);
+  }
+};
 
   const stepsList = [
     { num: 1, label: d.stepExecution },
@@ -200,7 +234,7 @@ export function TradeModal({
               <button
                 type="button"
                 className="yj-btn yj-btn-primary"
-                disabled={busy || !f.symbol || !f.accountId}
+                disabled={busy || !f.symbol || tradeAccountInputs.length === 0}
                 onClick={submit}
               >
                 <Check size={16} />
@@ -244,13 +278,35 @@ export function TradeModal({
           <h4 className="text-[14px] font-bold text-white border-b border-line pb-2">{d.step1Title}</h4>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label={d.account}>
-              <select className="yj-select" value={f.accountId} onChange={(e) => up("accountId", e.target.value)}>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} ({a.currency})
-                  </option>
-                ))}
-              </select>
+              <div className="space-y-2">
+                {accounts.map((a) => {
+                  const selected = tradeAccountInputs.some((x) => x.accountId === a.id);
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => {
+                        setTradeAccountInputs((current) =>
+                          selected
+                            ? current.filter((x) => x.accountId !== a.id)
+                            : [...current, { accountId: a.id, lotSize: null }]
+                        );
+                      }}
+                      className={clsx(
+                        "w-full rounded-xl border p-2.5 text-left text-[12.5px] font-semibold transition",
+                        selected
+                          ? "border-gold/60 bg-gold/15 text-gold"
+                          : "border-line bg-white/[0.02] text-mut hover:text-white"
+                      )}
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <span>{a.name}</span>
+                        <span>{a.currency}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </Field>
 
             <Field label={d.pairOrAsset}>
@@ -322,8 +378,7 @@ export function TradeModal({
               >
                 <option value="asia">{d.sessionAsia}</option>
                 <option value="london">{d.sessionLondon}</option>
-                <option value="newyork">{d.sessionNY}</option>
-              </select>
+                <option value="newyork">{d.sessionNY}</option>              </select>
             </Field>
 
             <Field label={d.tradingType}>
@@ -334,8 +389,7 @@ export function TradeModal({
               >
                 <option value="Day Trade">Day Trade</option>
                 <option value="Scalp">Scalp</option>
-                <option value="Swing">Swing</option>
-              </select>
+                <option value="Swing">Swing</option>              </select>
             </Field>
 
             <Field label={d.timeframeExecution}>
@@ -344,19 +398,63 @@ export function TradeModal({
                   <option key={tf} value={tf}>
                     {tf}
                   </option>
-                ))}
-              </select>
+                ))}              </select>
             </Field>
 
-            <Field label={d.risk}>
-              <input
-                type="number"
-                step="0.1"
-                className="yj-input mono"
-                value={f.riskPct}
-                onChange={(e) => up("riskPct", Number(e.target.value))}
-              />
-            </Field>
+            {tradeAccountInputs.length > 0 && (
+              <div className="sm:col-span-3 rounded-2xl border border-line bg-white/[0.02] p-4">
+                <div className="mb-3 text-[13px] font-bold text-white">
+                  Comptes associ?s
+                </div>
+
+                <div className="space-y-3">
+                  {tradeAccountInputs.map((item) => {
+                    const account = accounts.find((a) => a.id === item.accountId);
+                    if (!account) return null;
+
+                    return (
+                      <div
+                        key={item.accountId}
+                        className="grid gap-3 rounded-xl border border-line bg-white/[0.02] p-3 sm:grid-cols-3"
+                      >
+                        <div className="flex items-center">
+                          <div>
+                            <div className="text-[13px] font-semibold text-white">
+                              {account.name}
+                            </div>
+                            <div className="text-[11px] text-mut">
+                              {account.currency}
+                            </div>
+                          </div>
+                        </div>
+
+                        <Field label={d.lotSize}>
+                          <input
+                            type="number"
+                            step="any"
+                            min="0"
+                            className="yj-input mono"
+                            placeholder="1.0"
+                            value={item.lotSize ?? ""}
+                            onChange={(e) => {
+                              const value = e.target.value ? Number(e.target.value) : null;
+                              setTradeAccountInputs((current) =>
+                                current.map((x) =>
+                                  x.accountId === item.accountId
+                                    ? { ...x, lotSize: value }
+                                    : x
+                                )
+                              );
+                            }}
+                          />
+                        </Field>
+
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Prix d'Exécution Box */}
@@ -393,16 +491,6 @@ export function TradeModal({
                   onChange={(e) => up("takeProfit", e.target.value ? Number(e.target.value) : null)}
                 />
               </Field>
-              <Field label={d.lotSize}>
-                <input
-                  type="number"
-                  step="any"
-                  className="yj-input mono"
-                  placeholder="1.0"
-                  value={f.lotSize ?? ""}
-                  onChange={(e) => up("lotSize", e.target.value ? Number(e.target.value) : null)}
-                />
-              </Field>
               <Field label={d.exitPrice}>
                 <input
                   type="number"
@@ -420,26 +508,6 @@ export function TradeModal({
               <div>
                 <span className="yj-label block">{d.rrRatio}</span>
                 <span className="mono text-[15px] font-bold text-white">{f.rrRatio ? `1 : ${f.rrRatio}` : "—"}</span>
-              </div>
-              <div>
-                <span className="yj-label block">{d.tradeResultDollars}</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="yj-input mono !py-1 text-[14px] font-bold"
-                  value={f.pnl}
-                  onChange={(e) => up("pnl", Number(e.target.value))}
-                />
-              </div>
-              <div>
-                <span className="yj-label block">{d.returnRCalculated}</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="yj-input mono !py-1 text-[14px] font-bold"
-                  value={f.rMultiple}
-                  onChange={(e) => up("rMultiple", Number(e.target.value))}
-                />
               </div>
             </div>
           </div>
@@ -461,8 +529,7 @@ export function TradeModal({
                   <option key={st} value={st}>
                     {st}
                   </option>
-                ))}
-              </select>
+                ))}              </select>
             </Field>
 
             <Field label={d.htfTimeframe}>
@@ -471,8 +538,7 @@ export function TradeModal({
                   <option key={tf} value={tf}>
                     {tf}
                   </option>
-                ))}
-              </select>
+                ))}              </select>
             </Field>
 
             <Field label={d.poiZone} className="sm:col-span-2">
@@ -521,28 +587,19 @@ export function TradeModal({
                   <option key={es} value={es}>
                     {es}
                   </option>
-                ))}
-              </select>
+                ))}              </select>
             </Field>
 
             <Field label={d.planRespect}>
-              <select
-                className="yj-select"
-                value={f.planRespect}
-                onChange={(e) => up("planRespect", e.target.value as TradeInput["planRespect"])}
-              >
-                <option value="Oui">Oui (100% au plan)</option>
-                <option value="Partiel">Partiel (Légères déviations)</option>
-                <option value="Non">Non (Hors plan / Impulsif)</option>
-              </select>
+              <StarRating value={f.planRespect} onChange={(v) => up("planRespect", v)} />
             </Field>
-
             <Field label={d.tradeOutcome} className="sm:col-span-2">
               <select
                 className="yj-select"
                 value={f.tradeOutcome}
                 onChange={(e) => up("tradeOutcome", e.target.value as TradeInput["tradeOutcome"])}
               >
+                <option value="En cours">En cours</option>
                 <option value="TP touché">TP touché</option>
                 <option value="SL touché">SL touché</option>
                 <option value="BE">BE (Break-Even)</option>
@@ -673,19 +730,24 @@ function ScreenshotZone({
 
 export function TradeDetailModal({
   trade,
-  accountName,
+  accounts,
+  tradeAccounts,
   onClose,
   onEdit,
   d,
 }: {
   trade: Trade;
-  accountName: string;
+  accounts: Account[];
+  tradeAccounts: TradeAccount[];
   onClose: () => void;
   onEdit: () => void;
   d: Dict;
 }) {
   const [zoomImg, setZoomImg] = useState<string | null>(null);
   const [relatedEvents, setRelatedEvents] = useState<{ event: EconomicEvent; relation: string; minutesFromEntry: number | null }[]>([]);
+  const associatedTradeAccounts = tradeAccounts.filter(
+    (ta) => ta.tradeId === trade.id
+  );
 
   useEffect(() => {
     if (!trade.openedAt) {
@@ -741,22 +803,80 @@ export function TradeDetailModal({
                 {trade.direction === "long" ? d.long : d.short}
               </span>
             </div>
+
             <div className="rounded-xl border border-line bg-white/[0.02] p-3">
               <span className="yj-label block">{d.account}</span>
-              <span className="font-semibold text-white">{accountName}</span>
+              <div className="mt-1 space-y-1">
+                {associatedTradeAccounts.map((ta) => {
+                  const account = accounts.find((a) => a.id === ta.accountId);
+                  return (
+                    <div key={ta.id} className="font-semibold text-white">
+                      {account?.name ?? "?"}
+                      {ta.lotSize !== null && (
+                        <span className="ml-2 text-xs text-white/60">
+                          {ta.lotSize} lot
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+
             <div className="rounded-xl border border-line bg-white/[0.02] p-3">
               <span className="yj-label block">{d.returnR}</span>
-              <span className={clsx("mono font-bold", trade.rMultiple >= 0 ? "text-up" : "text-down")}>
-                {trade.rMultiple >= 0 ? "+" : ""}
-                {trade.rMultiple.toFixed(2)}R
-              </span>
+              <div className="mt-1 space-y-1">
+                {associatedTradeAccounts.map((ta) => {
+                  const account = accounts.find((a) => a.id === ta.accountId);
+                  const rMultiple = ta.rMultiple;
+                  return (
+                    <div
+                      key={ta.id}
+                      className={clsx(
+                        "mono font-bold",
+                        rMultiple === null
+                          ? "text-white/50"
+                          : rMultiple >= 0
+                            ? "text-up"
+                            : "text-down"
+                      )}
+                    >
+                      {account?.name ?? "?"}:{" "}
+                      {rMultiple === null
+                        ? "—"
+                        : `${rMultiple >= 0 ? "+" : ""}${rMultiple.toFixed(2)}R`}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+
             <div className="rounded-xl border border-line bg-white/[0.02] p-3">
               <span className="yj-label block">{d.pnl}</span>
-              <span className={clsx("mono font-bold", trade.pnl >= 0 ? "text-up" : "text-down")}>
-                {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
-              </span>
+              <div className="mt-1 space-y-1">
+                {associatedTradeAccounts.map((ta) => {
+                  const account = accounts.find((a) => a.id === ta.accountId);
+                  const pnl = ta.pnl;
+                  return (
+                    <div
+                      key={ta.id}
+                      className={clsx(
+                        "mono font-bold",
+                        pnl === null
+                          ? "text-white/50"
+                          : pnl >= 0
+                            ? "text-up"
+                            : "text-down"
+                      )}
+                    >
+                      {account?.name ?? "?"}:{" "}
+                      {pnl === null
+                        ? "—"
+                        : `${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -826,9 +946,18 @@ export function TradeDetailModal({
                 Émotion : <b className="text-white">{trade.emotionalState}</b>
               </p>
               <p className="mt-1 text-[12px] text-mut">
-                Plan : <b className="text-white">{trade.planRespect}</b> · Résultat :{" "}
-                <b className="text-white">{trade.tradeOutcome}</b>
-              </p>
+  Plan :{" "}
+  <span className="inline-flex items-center gap-0.5 align-middle">
+    {[1, 2, 3, 4, 5].map((n) => (
+      <Star
+        key={n}
+        size={13}
+        className={n <= trade.planRespect ? "fill-gold text-gold" : "text-mut"}
+      />
+    ))}
+  </span>
+  {" "}· Résultat : <b className="text-white">{trade.tradeOutcome}</b>
+</p>
               {trade.managementNotes && (
                 <p className="mt-2 text-[12.5px] text-ink/80 italic">{trade.managementNotes}</p>
               )}

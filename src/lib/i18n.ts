@@ -207,7 +207,7 @@ const dict = {
 
     step3Title: "Management & Psychologie",
     emotionalState: "État Émotionnel",
-    htfBias: "Contexte & Biais HTF",
+    htfBias: "Contexte",
     managementNotes: "Suivi de Position & Ajustements",
     planRespect: "Respect du Plan",
     tradeOutcome: "Résultat",
@@ -508,7 +508,7 @@ const dict = {
 
     step3Title: "Management & Psychology",
     emotionalState: "Emotional State",
-    htfBias: "HTF Context & Bias",
+    htfBias: "Context",
     managementNotes: "Position Tracking & Adjustments",
     planRespect: "Plan Followed",
     tradeOutcome: "Outcome",

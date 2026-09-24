@@ -22,6 +22,34 @@
       "when": 1789514715338,
       "tag": "0002_gigantic_dark_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790140010750,
+      "tag": "0003_warm_mephistopheles",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790147738818,
+      "tag": "0004_round_black_widow",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790151306322,
+      "tag": "0005_modern_thunderbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790227260434,
+      "tag": "0006_plan_respect_star_rating",
+      "breakpoints": true
     }
   ]
 }

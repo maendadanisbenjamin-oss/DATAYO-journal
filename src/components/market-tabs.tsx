@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import {
@@ -35,6 +35,7 @@ import type {
   Backtest,
   EconomicEvent,
   Instrument,
+  InstrumentSpec,
   MarketCandle,
   MarketDataGap,
   ReplaySession,
@@ -85,9 +86,18 @@ function MarketDataLibrary({
   onImported: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"instrument" | "csv">("instrument");
+  const [tab, setTab] = useState<"instrument" | "csv" | "spec">("instrument");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [specs, setSpecs] = useState<InstrumentSpec[]>([]);
+  const [specForm, setSpecForm] = useState({
+    instrumentId: "",
+    broker: "",
+    quantityUnit: "lot",
+    calculationModel: "price_delta_value",
+    valuePerPriceUnit: "",
+    priceIncrement: "",
+  });
   const [instrumentForm, setInstrumentForm] = useState({
     symbol: "",
     displayName: "",
@@ -100,7 +110,126 @@ function MarketDataLibrary({
   });
   const [importInstrumentId, setImportInstrumentId] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const loadSpecs = useCallback(async () => {
+    try {
+      const rows = await jsonFetch<
+        Array<{ spec: InstrumentSpec; instrument: Instrument }>
+      >("/api/market/instrument-specs");
 
+      setSpecs(rows.map((row) => row.spec));
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Impossible de charger les spécifications financières"
+      );
+    }
+  }, []);
+
+  const createSpec = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      const spec = await jsonFetch<InstrumentSpec>(
+        "/api/market/instrument-specs",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            instrumentId: specForm.instrumentId,
+            broker: specForm.broker,
+            quantityUnit: specForm.quantityUnit,
+            calculationModel: specForm.calculationModel,
+            valuePerPriceUnit: Number(specForm.valuePerPriceUnit),
+            priceIncrement: Number(specForm.priceIncrement),
+          }),
+        }
+      );
+
+      setSpecs((rows) => [...rows, spec]);
+      setSpecForm({
+        instrumentId: specForm.instrumentId,
+        broker: "",
+        quantityUnit: "lot",
+        calculationModel: "price_delta_value",
+        valuePerPriceUnit: "",
+        priceIncrement: "",
+      });
+      setMessage("Spécification financière créée.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Impossible de créer la spécification financière"
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+  const updateSpec = async (spec: InstrumentSpec) => {
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      const updated = await jsonFetch<InstrumentSpec>(
+        "/api/market/instrument-specs",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: spec.id,
+            broker: spec.broker,
+            quantityUnit: spec.quantityUnit,
+            calculationModel: spec.calculationModel,
+            valuePerPriceUnit: spec.valuePerPriceUnit,
+            priceIncrement: spec.priceIncrement,
+          }),
+        }
+      );
+
+      setSpecs((rows) =>
+        rows.map((row) => (row.id === updated.id ? updated : row))
+      );
+      setMessage("Spécification financière mise à jour.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Impossible de mettre à jour la spécification financière"
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const deleteSpec = async (id: string) => {
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      await jsonFetch<{ ok: true }>(
+        "/api/market/instrument-specs",
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        }
+      );
+
+      setSpecs((rows) => rows.filter((row) => row.id !== id));
+      setMessage("Spécification financière supprimée.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Impossible de supprimer la spécification financière"
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
   const createInstrument = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -169,6 +298,12 @@ function MarketDataLibrary({
             <button onClick={() => setTab("instrument")} className={clsx("flex-1 rounded-lg px-3 py-2 transition", tab === "instrument" ? "bg-gold text-[#17130a]" : "text-mut hover:text-white")}>
               {d.createInstrument}
             </button>
+            <button onClick={() => {
+              setTab("spec");
+              void loadSpecs();
+            }} className={clsx("flex-1 rounded-lg px-3 py-2 transition", tab === "spec" ? "bg-gold text-[#17130a]" : "text-mut hover:text-white")}>
+              Spécification financière
+            </button>
             <button onClick={() => setTab("csv")} className={clsx("flex-1 rounded-lg px-3 py-2 transition", tab === "csv" ? "bg-gold text-[#17130a]" : "text-mut hover:text-white")}>
               {d.importCsv}
             </button>
@@ -186,6 +321,281 @@ function MarketDataLibrary({
               <label className="sm:col-span-2"><span className="yj-label mb-1 block">{d.quality}</span><input className="yj-input" placeholder="Source, couverture, horaires, contraintes de licence…" value={instrumentForm.qualityNotes} onChange={(e) => setInstrumentForm({ ...instrumentForm, qualityNotes: e.target.value })} /></label>
               <div className="sm:col-span-3 flex justify-end"><button disabled={busy} className="yj-btn yj-btn-primary"><Plus size={15} />{busy ? "Création…" : d.createInstrument}</button></div>
             </form>
+          ) : tab === "spec" ? (
+            <div className="grid gap-4">
+              <form onSubmit={createSpec} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <label>
+                  <span className="yj-label mb-1 block">Instrument</span>
+                  <select
+                    required
+                    className="yj-select"
+                    value={specForm.instrumentId}
+                    onChange={(e) =>
+                      setSpecForm({ ...specForm, instrumentId: e.target.value })
+                    }
+                  >
+                    <option value="">Sélectionner un instrument</option>
+                    {instruments.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.symbol} — {item.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span className="yj-label mb-1 block">Broker</span>
+                  <input
+                    required
+                    className="yj-input"
+                    placeholder="Broker"
+                    value={specForm.broker}
+                    onChange={(e) =>
+                      setSpecForm({ ...specForm, broker: e.target.value })
+                    }
+                  />
+                </label>
+
+                <label>
+                  <span className="yj-label mb-1 block">Unité</span>
+                  <select
+                    className="yj-select"
+                    value={specForm.quantityUnit}
+                    onChange={(e) =>
+                      setSpecForm({
+                        ...specForm,
+                        quantityUnit: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="lot">Lot</option>
+                    <option value="unit">Unité</option>
+                    <option value="contract">Contrat</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span className="yj-label mb-1 block">Modèle de calcul</span>
+                  <select
+                    className="yj-select"
+                    value={specForm.calculationModel}
+                    onChange={(e) =>
+                      setSpecForm({
+                        ...specForm,
+                        calculationModel: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="price_delta_value">
+                      Delta de prix × valeur
+                    </option>
+                  </select>
+                </label>
+
+                <label>
+                  <span className="yj-label mb-1 block">
+                    Valeur par unité de prix
+                  </span>
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    step="any"
+                    className="yj-input"
+                    placeholder="100000"
+                    value={specForm.valuePerPriceUnit}
+                    onChange={(e) =>
+                      setSpecForm({
+                        ...specForm,
+                        valuePerPriceUnit: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+
+                <label>
+                  <span className="yj-label mb-1 block">
+                    Incrément de prix
+                  </span>
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    step="any"
+                    className="yj-input"
+                    placeholder="0.0001"
+                    value={specForm.priceIncrement}
+                    onChange={(e) =>
+                      setSpecForm({
+                        ...specForm,
+                        priceIncrement: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+
+                <div className="sm:col-span-2 lg:col-span-3 flex justify-end">
+                  <button
+                    disabled={busy || !instruments.length}
+                    className="yj-btn yj-btn-primary"
+                  >
+                    <Plus size={15} />
+                    {busy ? "Création…" : "Ajouter la spécification"}
+                  </button>
+                </div>
+              </form>
+
+              <div className="rounded-xl border border-line bg-white/[0.02] px-3 py-2 text-[11.5px] leading-relaxed text-mut">
+                Une spécification financière est définie par instrument et par broker.
+                Elle sert au calcul du risque et du résultat selon la convention financière
+                du broker.
+              </div>
+
+              {specs.length > 0 && (
+                <div className="grid gap-3">
+                  <div className="text-[12px] font-bold text-white">
+                    Spécifications existantes
+                  </div>
+
+                  {specs.map((spec) => {
+                    const instrument = instruments.find(
+                      (item) => item.id === spec.instrumentId
+                    );
+
+                    return (
+                      <div
+                        key={spec.id}
+                        className="grid gap-3 rounded-xl border border-line bg-white/[0.02] p-3 lg:grid-cols-[1fr_1fr_120px_150px_120px_auto]"
+                      >
+                        <label>
+                          <span className="yj-label mb-1 block">Instrument</span>
+                          <select
+                            className="yj-select"
+                            value={spec.instrumentId}
+                            disabled
+                          >
+                            <option value={spec.instrumentId}>
+                              {instrument
+                                ? `${instrument.symbol} — ${instrument.displayName}`
+                                : spec.instrumentId}
+                            </option>
+                          </select>
+                        </label>
+
+                        <label>
+                          <span className="yj-label mb-1 block">Broker</span>
+                          <input
+                            className="yj-input"
+                            value={spec.broker}
+                            onChange={(e) =>
+                              setSpecs((rows) =>
+                                rows.map((row) =>
+                                  row.id === spec.id
+                                    ? { ...row, broker: e.target.value }
+                                    : row
+                                )
+                              )
+                            }
+                          />
+                        </label>
+
+                        <label>
+                          <span className="yj-label mb-1 block">Unité</span>
+                          <select
+                            className="yj-select"
+                            value={spec.quantityUnit}
+                            onChange={(e) =>
+                              setSpecs((rows) =>
+                                rows.map((row) =>
+                                  row.id === spec.id
+                                    ? {
+                                        ...row,
+                                        quantityUnit: e.target.value,
+                                      }
+                                    : row
+                                )
+                              )
+                            }
+                          >
+                            <option value="lot">Lot</option>
+                            <option value="unit">Unité</option>
+                            <option value="contract">Contrat</option>
+                          </select>
+                        </label>
+
+                        <label>
+                          <span className="yj-label mb-1 block">Valeur / prix</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            className="yj-input"
+                            value={spec.valuePerPriceUnit}
+                            onChange={(e) =>
+                              setSpecs((rows) =>
+                                rows.map((row) =>
+                                  row.id === spec.id
+                                    ? {
+                                        ...row,
+                                        valuePerPriceUnit: Number(e.target.value),
+                                      }
+                                    : row
+                                )
+                              )
+                            }
+                          />
+                        </label>
+
+                        <label>
+                          <span className="yj-label mb-1 block">Incrément</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            className="yj-input"
+                            value={spec.priceIncrement}
+                            onChange={(e) =>
+                              setSpecs((rows) =>
+                                rows.map((row) =>
+                                  row.id === spec.id
+                                    ? {
+                                        ...row,
+                                        priceIncrement: Number(e.target.value),
+                                      }
+                                    : row
+                                )
+                              )
+                            }
+                          />
+                        </label>
+
+                        <div className="flex items-end justify-end gap-2">
+                          <button
+                            type="button"
+                            disabled={busy}
+                            className="yj-btn"
+                            onClick={() => updateSpec(spec)}
+                          >
+                            <Save size={15} />
+                            Enregistrer
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={busy}
+                            className="yj-btn"
+                            onClick={() => deleteSpec(spec.id)}
+                            title="Supprimer"
+                          >
+                            <X size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
               <label><span className="yj-label mb-1 block">{d.instruments}</span><select className="yj-select" value={importInstrumentId} onChange={(e) => setImportInstrumentId(e.target.value)}><option value="">Sélectionner un instrument</option>{instruments.map((item) => <option key={item.id} value={item.id}>{item.symbol} — {item.displayName}</option>)}</select></label>
