@@ -1,0 +1,1 @@
+ALTER TABLE "trade_accounts" ADD COLUMN "account_balance" real;

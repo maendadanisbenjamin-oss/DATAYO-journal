@@ -159,6 +159,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     const tradeAccountRows: Array<{
       tradeId: string;
       accountId: string;
+      accountBalance: number | null;
       lotSize: number | null;
       riskPct: number | null;
       riskAmount: number | null;
@@ -228,6 +229,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       tradeAccountRows.push({
         tradeId: id,
         accountId: item.accountId,
+        accountBalance: balanceBefore,
         lotSize: item.lotSize,
         riskPct,
         riskAmount,

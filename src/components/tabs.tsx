@@ -37,7 +37,6 @@ import {
   WinningBreakdownCard,
 } from "./charts";
 import { Avatar } from "./ui";
-import NewsImpactPanel from "./news-impact";
 
 type CommonProps = {
   d: Dict;
@@ -761,6 +760,10 @@ export function AnalysisStatsTab({
     () => groupBy(filtered, (t) => t.marketStructure || "Non défini").sort((a, b) => b.net - a.net),
     [filtered]
   );
+  const byPoiZone = useMemo(
+    () => groupBy(filtered, (t) => t.poiZone || "Non défini").sort((a, b) => b.net - a.net),
+    [filtered]
+  );
 
   // Calendar calculation mode ($ amount or % percentage)
   const [weekCalcMode, setWeekCalcMode] = useState<"amount" | "percent">(() => {
@@ -1052,10 +1055,8 @@ export function AnalysisStatsTab({
         </div>
       </div>
 
-      {/* Impact des news sur les performances Journal */}
-      <NewsImpactPanel lang={lang} />
 
-      {/* Performance par Critères (6 tables) */}
+      {/* Performance par Critères (7 tables) */}
       <div>
         <h3 className="mb-4 text-[16px] font-extrabold text-white">{d.performanceByCriteria}</h3>
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -1065,6 +1066,7 @@ export function AnalysisStatsTab({
           <CriteriaTable title={d.byTradingType} rows={byTradingType} labelKey="key" d={d} lang={lang} />
           <CriteriaTable title={d.byIctModel} rows={byIctModel} labelKey="key" d={d} lang={lang} />
           <CriteriaTable title={d.byStructure} rows={byStructure} labelKey="key" d={d} lang={lang} />
+          <CriteriaTable title={d.poiZone} rows={byPoiZone} labelKey="key" d={d} lang={lang} />
         </div>
       </div>
 

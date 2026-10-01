@@ -116,6 +116,7 @@ export async function POST(req: Request) {
     const tradeAccountRows: Array<{
       tradeId: string;
       accountId: string;
+      accountBalance: number | null;
       lotSize: number | null;
       riskPct: number | null;
       riskAmount: number | null;
@@ -185,6 +186,7 @@ export async function POST(req: Request) {
       tradeAccountRows.push({
         tradeId: createdTrade.id,
         accountId: item.accountId,
+        accountBalance: balanceBefore,
         lotSize: item.lotSize,
         riskPct,
         riskAmount,

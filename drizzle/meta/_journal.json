@@ -50,6 +50,20 @@
       "when": 1790227260434,
       "tag": "0006_plan_respect_star_rating",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790283462317,
+      "tag": "0007_outgoing_nitro",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790283462318,
+      "tag": "0008_add_trade_account_balance",
+      "breakpoints": true
     }
   ]
 }

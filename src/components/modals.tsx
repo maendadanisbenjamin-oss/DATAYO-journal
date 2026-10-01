@@ -491,16 +491,6 @@ export function TradeModal({
                   onChange={(e) => up("takeProfit", e.target.value ? Number(e.target.value) : null)}
                 />
               </Field>
-              <Field label={d.exitPrice}>
-                <input
-                  type="number"
-                  step="any"
-                  className="yj-input mono"
-                  placeholder="1.08850"
-                  value={f.exitPrice ?? ""}
-                  onChange={(e) => up("exitPrice", e.target.value ? Number(e.target.value) : null)}
-                />
-              </Field>
             </div>
 
             {/* Calculated values */}
@@ -593,19 +583,6 @@ export function TradeModal({
             <Field label={d.planRespect}>
               <StarRating value={f.planRespect} onChange={(v) => up("planRespect", v)} />
             </Field>
-            <Field label={d.tradeOutcome} className="sm:col-span-2">
-              <select
-                className="yj-select"
-                value={f.tradeOutcome}
-                onChange={(e) => up("tradeOutcome", e.target.value as TradeInput["tradeOutcome"])}
-              >
-                <option value="En cours">En cours</option>
-                <option value="TP touché">TP touché</option>
-                <option value="SL touché">SL touché</option>
-                <option value="BE">BE (Break-Even)</option>
-                <option value="Sortie manuelle">Sortie manuelle</option>
-              </select>
-            </Field>
 
             <Field label={d.htfBias} className="sm:col-span-2">
               <textarea
@@ -661,7 +638,33 @@ export function TradeModal({
             />
           </div>
 
-          <Field label={d.lessonsLearned}>
+
+
+
+                <Field label={d.exitPrice} className="sm:col-span-2">
+                <input
+                  type="number"
+                  step="any"
+                  className="yj-input mono"
+                  placeholder="1.08850"
+                  value={f.exitPrice ?? ""}
+                  onChange={(e) => up("exitPrice", e.target.value ? Number(e.target.value) : null)}
+                />
+              </Field>
+              <Field label={d.tradeOutcome} className="sm:col-span-2">
+              <select
+                className="yj-select"
+                value={f.tradeOutcome}
+                onChange={(e) => up("tradeOutcome", e.target.value as TradeInput["tradeOutcome"])}
+              >
+                <option value="En cours">En cours</option>
+                <option value="TP touché">TP touché</option>
+                <option value="SL touché">SL touché</option>
+                <option value="BE">BE (Break-Even)</option>
+                <option value="Sortie manuelle">Sortie manuelle</option>
+              </select>
+            </Field>
+              <Field label={d.lessonsLearned}>
             <textarea
               rows={4}
               className="yj-textarea"
@@ -689,13 +692,32 @@ function ScreenshotZone({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const imageItem = Array.from(event.clipboardData.items).find((item) =>
+      item.type.startsWith("image/"),
+    );
+
+    const file = imageItem?.getAsFile();
+
+    if (!file) return;
+
+    event.preventDefault();
+    onUpload(file);
+  };
+
   return (
-    <div className="flex flex-col rounded-2xl border border-line bg-white/[0.02] p-3 text-center">
+    <div
+      className="flex flex-col rounded-2xl border border-line bg-white/[0.02] p-3 text-center outline-none focus:border-gold/50"
+      tabIndex={0}
+      onPaste={handlePaste}
+    >
       <span className="yj-label mb-2 block text-left">{title}</span>
+
       {dataUrl ? (
         <div className="group relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-line bg-black/40">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={dataUrl} alt={title} className="h-full w-full object-cover" />
+
           <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 opacity-0 transition group-hover:opacity-100">
             <button
               type="button"
@@ -713,10 +735,15 @@ function ScreenshotZone({
           className="flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-line bg-panel/30 p-4 transition hover:border-gold/50 hover:bg-gold/[0.03]"
         >
           <UploadCloud size={24} className="mb-2 text-mut" />
-          <p className="text-[11.5px] font-medium text-mut">Glisser une image ou</p>
-          <p className="text-[11px] font-bold text-gold hover:underline">cliquer pour téléverser</p>
+          <p className="text-[11.5px] font-medium text-mut">
+            Glisser une image ou
+          </p>
+          <p className="text-[11px] font-bold text-gold hover:underline">
+            cliquer pour télécharger
+          </p>
         </div>
       )}
+
       <input
         ref={inputRef}
         type="file"
@@ -727,7 +754,6 @@ function ScreenshotZone({
     </div>
   );
 }
-
 export function TradeDetailModal({
   trade,
   accounts,

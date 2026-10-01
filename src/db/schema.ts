@@ -80,6 +80,7 @@ export const trades = pgTable(
     accountId: uuid("account_id")
       .notNull()
       .references(() => accounts.id, { onDelete: "cascade" }),
+
     date: text("date").notNull(), // YYYY-MM-DD, retained for journal/calendar compatibility
     openedAt: timestamp("opened_at", { withTimezone: true }),
     closedAt: timestamp("closed_at", { withTimezone: true }),
@@ -142,6 +143,7 @@ export const tradeAccounts = pgTable(
     accountId: uuid("account_id")
       .notNull()
       .references(() => accounts.id, { onDelete: "cascade" }),
+    accountBalance: real("account_balance"),
     lotSize: real("lot_size"),
     riskPct: real("risk_pct"),
     riskAmount: real("risk_amount"),
@@ -568,4 +570,253 @@ export const backtestTrades = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("backtest_trades_backtest_idx").on(t.backtestId), index("backtest_trades_opened_idx").on(t.openedAt)]
+);
+
+/* ---------------------------------------------------------------------------
+ * Broker integration domain - MT4 / MT5 bridge and synchronization.
+ * Kept separate from the existing journal trade model.
+ * ------------------------------------------------------------------------- */
+
+export const brokerConnections = pgTable(
+  "broker_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    accountBalance: real("account_balance"),
+    platform: text("platform").notNull(), // mt4 | mt5
+    brokerName: text("broker_name").notNull().default(""),
+    brokerAccountId: text("broker_account_id").notNull(),
+    serverName: text("server_name").notNull().default(""),
+    bridgeId: text("bridge_id").notNull(),
+    bridgeTokenHash: text("bridge_token_hash").notNull(),
+    status: text("status").notNull().default("pending"),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+    lastError: text("last_error").notNull().default(""),
+    metadata: text("metadata").notNull().default("{}"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("broker_connections_bridge_id_idx").on(t.bridgeId),
+    index("broker_connections_account_idx").on(t.accountId),
+    index("broker_connections_status_idx").on(t.status),
+  ]
+);
+
+export const brokerSyncRuns = pgTable(
+  "broker_sync_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    connectionId: uuid("connection_id")
+      .notNull()
+      .references(() => brokerConnections.id, { onDelete: "cascade" }),
+    mode: text("mode").notNull(), // initial | historical | realtime | manual
+    status: text("status").notNull().default("running"),
+    requestedFrom: timestamp("requested_from", { withTimezone: true }),
+    requestedTo: timestamp("requested_to", { withTimezone: true }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    ordersReceived: integer("orders_received").notNull().default(0),
+    ordersCreated: integer("orders_created").notNull().default(0),
+    ordersUpdated: integer("orders_updated").notNull().default(0),
+    dealsReceived: integer("deals_received").notNull().default(0),
+    dealsCreated: integer("deals_created").notNull().default(0),
+    dealsUpdated: integer("deals_updated").notNull().default(0),
+    positionsReceived: integer("positions_received").notNull().default(0),
+    positionsCreated: integer("positions_created").notNull().default(0),
+    positionsUpdated: integer("positions_updated").notNull().default(0),
+    errorLog: text("error_log").notNull().default(""),
+    metadata: text("metadata").notNull().default("{}"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("broker_sync_runs_connection_idx").on(t.connectionId),
+    index("broker_sync_runs_started_idx").on(t.startedAt),
+    index("broker_sync_runs_status_idx").on(t.status),
+  ]
+);
+
+export const brokerOrders = pgTable(
+  "broker_orders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    connectionId: uuid("connection_id")
+      .notNull()
+      .references(() => brokerConnections.id, { onDelete: "cascade" }),
+    brokerOrderId: text("broker_order_id").notNull(),
+    symbol: text("symbol").notNull(),
+    orderType: text("order_type").notNull().default(""),
+    side: text("side").notNull().default(""),
+    volume: real("volume").notNull().default(0),
+    price: real("price"),
+    stopLoss: real("stop_loss"),
+    takeProfit: real("take_profit"),
+    status: text("status").notNull().default(""),
+    openedAt: timestamp("opened_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    magicNumber: text("magic_number").notNull().default(""),
+    comment: text("comment").notNull().default(""),
+    rawData: text("raw_data").notNull().default("{}"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("broker_orders_connection_order_idx").on(
+      t.connectionId,
+      t.brokerOrderId
+    ),
+    index("broker_orders_connection_idx").on(t.connectionId),
+    index("broker_orders_symbol_idx").on(t.symbol),
+    index("broker_orders_updated_idx").on(t.updatedAt),
+  ]
+);
+
+export const brokerDeals = pgTable(
+  "broker_deals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    connectionId: uuid("connection_id")
+      .notNull()
+      .references(() => brokerConnections.id, { onDelete: "cascade" }),
+    brokerDealId: text("broker_deal_id").notNull(),
+    brokerOrderId: text("broker_order_id"),
+    brokerPositionId: text("broker_position_id"),
+    symbol: text("symbol").notNull(),
+    dealType: text("deal_type").notNull().default(""),
+    side: text("side").notNull().default(""),
+    volume: real("volume").notNull().default(0),
+    price: real("price").notNull().default(0),
+    commission: real("commission").notNull().default(0),
+    swap: real("swap").notNull().default(0),
+    profit: real("profit").notNull().default(0),
+    fee: real("fee").notNull().default(0),
+    executedAt: timestamp("executed_at", { withTimezone: true }).notNull(),
+    magicNumber: text("magic_number").notNull().default(""),
+    comment: text("comment").notNull().default(""),
+    rawData: text("raw_data").notNull().default("{}"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("broker_deals_connection_deal_idx").on(
+      t.connectionId,
+      t.brokerDealId
+    ),
+    index("broker_deals_connection_idx").on(t.connectionId),
+    index("broker_deals_order_idx").on(t.connectionId, t.brokerOrderId),
+    index("broker_deals_position_idx").on(t.connectionId, t.brokerPositionId),
+    index("broker_deals_executed_idx").on(t.executedAt),
+  ]
+);
+
+export const brokerPositions = pgTable(
+  "broker_positions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    connectionId: uuid("connection_id")
+      .notNull()
+      .references(() => brokerConnections.id, { onDelete: "cascade" }),
+    brokerPositionId: text("broker_position_id").notNull(),
+    symbol: text("symbol").notNull(),
+    direction: text("direction").notNull(),
+    volume: real("volume").notNull().default(0),
+    entryPrice: real("entry_price").notNull().default(0),
+    currentPrice: real("current_price").notNull().default(0),
+    stopLoss: real("stop_loss"),
+    takeProfit: real("take_profit"),
+    profit: real("profit").notNull().default(0),
+    swap: real("swap").notNull().default(0),
+    commission: real("commission").notNull().default(0),
+    openedAt: timestamp("opened_at", { withTimezone: true }).notNull(),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    status: text("status").notNull().default("open"),
+    magicNumber: text("magic_number").notNull().default(""),
+    comment: text("comment").notNull().default(""),
+    rawData: text("raw_data").notNull().default("{}"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("broker_positions_connection_position_idx").on(
+      t.connectionId,
+      t.brokerPositionId
+    ),
+    index("broker_positions_connection_idx").on(t.connectionId),
+    index("broker_positions_symbol_idx").on(t.symbol),
+    index("broker_positions_status_idx").on(t.status),
+    index("broker_positions_synced_idx").on(t.syncedAt),
+  ]
+);
+
+export const brokerCommands = pgTable(
+  "broker_commands",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    connectionId: uuid("connection_id")
+      .notNull()
+      .references(() => brokerConnections.id, { onDelete: "cascade" }),
+    commandType: text("command_type").notNull(),
+    symbol: text("symbol").notNull().default(""),
+    direction: text("direction").notNull().default(""),
+    volume: real("volume").notNull().default(0),
+    price: real("price"),
+    stopLoss: real("stop_loss"),
+    takeProfit: real("take_profit"),
+    brokerOrderId: text("broker_order_id"),
+    brokerPositionId: text("broker_position_id"),
+    status: text("status").notNull().default("pending"),
+    requestedAt: timestamp("requested_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    errorMessage: text("error_message").notNull().default(""),
+    payload: text("payload").notNull().default("{}"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("broker_commands_connection_idx").on(t.connectionId),
+    index("broker_commands_status_idx").on(t.status),
+    index("broker_commands_requested_idx").on(t.requestedAt),
+  ]
+);
+
+export const tradeBrokerLinks = pgTable(
+  "trade_broker_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tradeId: uuid("trade_id")
+      .notNull()
+      .references(() => trades.id, { onDelete: "cascade" }),
+    connectionId: uuid("connection_id")
+      .notNull()
+      .references(() => brokerConnections.id, { onDelete: "cascade" }),
+    brokerOrderId: text("broker_order_id"),
+    brokerDealId: text("broker_deal_id"),
+    brokerPositionId: text("broker_position_id"),
+    relationType: text("relation_type").notNull().default("primary"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("trade_broker_links_trade_idx").on(t.tradeId),
+    index("trade_broker_links_connection_idx").on(t.connectionId),
+    index("trade_broker_links_order_idx").on(
+      t.connectionId,
+      t.brokerOrderId
+    ),
+    index("trade_broker_links_deal_idx").on(
+      t.connectionId,
+      t.brokerDealId
+    ),
+    index("trade_broker_links_position_idx").on(
+      t.connectionId,
+      t.brokerPositionId
+    ),
+  ]
 );

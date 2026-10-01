@@ -84,6 +84,7 @@ export type TradeAccount = {
   id: string;
   tradeId: string;
   accountId: string;
+  accountBalance: number | null;
   lotSize: number | null;
   riskPct: number | null;
   riskAmount: number | null;
