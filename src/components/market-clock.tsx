@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import clsx from "clsx";
 import type { Dict } from "@/lib/i18n";
@@ -12,10 +12,32 @@ function zoned(tz: string, d: Date) {
   return { day: DAYS.indexOf(m.weekday), h: Number(m.hour) % 24, m: Number(m.minute) };
 }
 
+function toMinutes(value: string) {
+  const [h, m] = value.split(":").map(Number);
+  return h * 60 + m;
+}
 const SESSIONS = [
-  { abbr: "ASN", key: "sessionAsia", tz: "Asia/Tokyo", open: 9, close: 18 },
-  { abbr: "LDN", key: "sessionLondon", tz: "Europe/London", open: 8, close: 17 },
-  { abbr: "NYC", key: "sessionNY", tz: "America/New_York", open: 8, close: 17 },
+  {
+    abbr: "ASN",
+    key: "sessionAsia",
+    tz: "America/New_York",
+    open: "20:00",
+    close: "00:00",
+  },
+  {
+    abbr: "LDN",
+    key: "sessionLondon",
+    tz: "America/New_York",
+    open: "02:00",
+    close: "05:00",
+  },
+  {
+    abbr: "NYC",
+    key: "sessionNY",
+    tz: "America/New_York",
+    open: "07:00",
+    close: "10:00",
+  },
 ] as const;
 
 export default function MarketClock({ d, lang }: { d: Dict; lang: "fr" | "en" }) {
@@ -34,7 +56,21 @@ export default function MarketClock({ d, lang }: { d: Dict; lang: "fr" | "en" })
   const marketOpen = !!now && ((et.day >= 1 && et.day <= 4) || (et.day === 5 && et.h < 17) || (et.day === 0 && et.h >= 17));
   const states = SESSIONS.map((s) => {
     const p = zoned(s.tz, cur);
-    return { ...s, isOpen: !!now && p.day >= 1 && p.day <= 5 && p.h >= s.open && p.h < s.close, time: `${String(p.h).padStart(2, "0")}:${String(p.m).padStart(2, "0")}` };
+    const currentMinutes = p.h * 60 + p.m;
+    const openMinutes = toMinutes(s.open);
+    const closeMinutes = toMinutes(s.close);
+
+    return {
+      ...s,
+      isOpen:
+        !!now &&
+        p.day >= 1 &&
+        p.day <= 5 &&
+        (openMinutes < closeMinutes
+          ? currentMinutes >= openMinutes && currentMinutes < closeMinutes
+          : currentMinutes >= openMinutes || currentMinutes < closeMinutes),
+      time: `${String(p.h).padStart(2, "0")}:${String(p.m).padStart(2, "0")}`,
+    };
   });
   const overlap = states[1].isOpen && states[2].isOpen;
   const clock = now ? now.toLocaleTimeString(lang === "fr" ? "fr-FR" : "en-GB", { hour12: false }) : "--:--:--";
@@ -56,7 +92,7 @@ export default function MarketClock({ d, lang }: { d: Dict; lang: "fr" | "en" })
         {states.map((s) => (
           <div
             key={s.abbr}
-            title={`${d[s.key]} · ${s.open}:00–${s.close}:00`}
+            title={`${d[s.key]} · ${s.open}–${s.close} ET`}
             className={clsx(
               "flex items-center gap-2 rounded-xl border px-2.5 py-1.5 transition",
               s.isOpen ? "border-up/30 bg-up/[0.06]" : "border-line bg-panel/40 opacity-70"
