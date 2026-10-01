@@ -822,7 +822,7 @@ export function TradeDetailModal({
       >
         <div className="space-y-6 text-[13px]">
           {/* Header Stats Strip */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <div className="rounded-xl border border-line bg-white/[0.02] p-3">
               <span className="yj-label block">{d.direction}</span>
               <span className={clsx("font-bold", trade.direction === "long" ? "text-up" : "text-down")}>
@@ -832,7 +832,7 @@ export function TradeDetailModal({
 
             <div className="rounded-xl border border-line bg-white/[0.02] p-3">
               <span className="yj-label block">{d.account}</span>
-              <div className="mt-1 space-y-1">
+              <div className="mt-1 space-y-2">
                 {associatedTradeAccounts.map((ta) => {
                   const account = accounts.find((a) => a.id === ta.accountId);
                   return (
@@ -843,6 +843,31 @@ export function TradeDetailModal({
                           {ta.lotSize} lot
                         </span>
                       )}
+                      {ta.accountBalance !== null && (
+                        <div className="mt-0.5 mono text-xs text-white/60">
+                          {d.balance}: ${ta.accountBalance.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-line bg-white/[0.02] p-3">
+              <span className="yj-label block">{d.risk}</span>
+              <div className="mt-1 space-y-2">
+                {associatedTradeAccounts.map((ta) => {
+                  const account = accounts.find((a) => a.id === ta.accountId);
+                  return (
+                    <div key={ta.id} className="mono font-bold text-white">
+                      {account?.name ?? "?"}:{" "}
+                      {ta.riskPct === null ? "—" : `${ta.riskPct.toFixed(2)}%`}
+                      {ta.riskAmount !== null && (
+                        <div className="mt-0.5 text-xs font-normal text-white/60">
+                          ${ta.riskAmount.toFixed(2)}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -851,7 +876,7 @@ export function TradeDetailModal({
 
             <div className="rounded-xl border border-line bg-white/[0.02] p-3">
               <span className="yj-label block">{d.returnR}</span>
-              <div className="mt-1 space-y-1">
+              <div className="mt-1 space-y-2">
                 {associatedTradeAccounts.map((ta) => {
                   const account = accounts.find((a) => a.id === ta.accountId);
                   const rMultiple = ta.rMultiple;
@@ -879,7 +904,7 @@ export function TradeDetailModal({
 
             <div className="rounded-xl border border-line bg-white/[0.02] p-3">
               <span className="yj-label block">{d.pnl}</span>
-              <div className="mt-1 space-y-1">
+              <div className="mt-1 space-y-2">
                 {associatedTradeAccounts.map((ta) => {
                   const account = accounts.find((a) => a.id === ta.accountId);
                   const pnl = ta.pnl;
@@ -925,6 +950,12 @@ export function TradeDetailModal({
               <div>
                 <span className="yj-label block">{d.ictModel}</span>
                 <span className="text-gold font-medium">{trade.ictModel}</span>
+              </div>
+              <div>
+                <span className="yj-label block">{d.rrRatio}</span>
+                <span className="mono text-white">
+                  {trade.rrRatio !== null ? `1 : ${trade.rrRatio}` : "—"}
+                </span>
               </div>
               {trade.entryPrice && (
                 <div>
