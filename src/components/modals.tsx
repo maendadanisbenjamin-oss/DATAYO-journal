@@ -35,6 +35,23 @@ import {
 import { Avatar, Field, Modal, compressImage } from "./ui";
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+const TIMEZONE_OPTIONS = [
+  { value: "Europe/Paris", label: "Europe/Paris" },
+  { value: "Europe/London", label: "Europe/London" },
+  { value: "Europe/Brussels", label: "Europe/Brussels" },
+  { value: "Africa/Kinshasa", label: "Africa/Kinshasa" },
+  { value: "Africa/Lagos", label: "Africa/Lagos" },
+  { value: "America/New_York", label: "America/New_York" },
+  { value: "America/Chicago", label: "America/Chicago" },
+  { value: "America/Denver", label: "America/Denver" },
+  { value: "America/Los_Angeles", label: "America/Los_Angeles" },
+  { value: "Asia/Dubai", label: "Asia/Dubai" },
+  { value: "Asia/Tokyo", label: "Asia/Tokyo" },
+  { value: "Asia/Singapore", label: "Asia/Singapore" },
+  { value: "Australia/Sydney", label: "Australia/Sydney" },
+  { value: "UTC", label: "UTC" },
+];
 function StarRating({
   value,
   onChange,
@@ -1222,6 +1239,7 @@ export function ProfileModal({
     bio: profile.bio,
     memberSince: profile.memberSince,
     avatarUrl: profile.avatarUrl as string | null,
+    timezone: profile.timezone || "Europe/Paris",
     currentPassword: "",
     newPassword: "",
   });
@@ -1254,6 +1272,7 @@ export function ProfileModal({
         bio: f.bio,
         memberSince: f.memberSince,
         avatarUrl: f.avatarUrl,
+        timezone: f.timezone,
       };
       if (f.newPassword) {
         patch.newPassword = f.newPassword;
@@ -1335,6 +1354,19 @@ export function ProfileModal({
             value={f.memberSince}
             onChange={(e) => setF({ ...f, memberSince: Number(e.target.value) })}
           />
+        </Field>
+        <Field label={d.timezone}>
+          <select
+            className="yj-input"
+            value={f.timezone}
+            onChange={(e) => setF({ ...f, timezone: e.target.value })}
+          >
+            {TIMEZONE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label={d.bio} className="sm:col-span-2">
           <textarea rows={3} className="yj-textarea" value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} />

@@ -40,7 +40,7 @@ const SESSIONS = [
   },
 ] as const;
 
-export default function MarketClock({ d, lang }: { d: Dict; lang: "fr" | "en" }) {
+export default function MarketClock({ d, lang, timezone }: { d: Dict; lang: "fr" | "en"; timezone: string }) {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     const initial = setTimeout(() => setNow(new Date()), 0);
@@ -73,7 +73,7 @@ export default function MarketClock({ d, lang }: { d: Dict; lang: "fr" | "en" })
     };
   });
   const overlap = states[1].isOpen && states[2].isOpen;
-  const clock = now ? now.toLocaleTimeString(lang === "fr" ? "fr-FR" : "en-GB", { hour12: false }) : "--:--:--";
+  const clock = now ? now.toLocaleTimeString(lang === "fr" ? "fr-FR" : "en-GB", { hour12: false, timeZone: timezone }) : "--:--:--";
 
   return (
     <div className="flex flex-wrap items-center gap-2">

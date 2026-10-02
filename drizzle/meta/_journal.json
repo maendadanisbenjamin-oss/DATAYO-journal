@@ -64,6 +64,13 @@
       "when": 1790283462318,
       "tag": "0008_add_trade_account_balance",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790886372120,
+      "tag": "0009_flashy_gertrude_yorkes",
+      "breakpoints": true
     }
   ]
 }

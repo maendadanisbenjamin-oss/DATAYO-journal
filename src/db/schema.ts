@@ -32,6 +32,7 @@ export const profiles = pgTable(
     bio: text("bio").notNull().default(""),
     memberSince: integer("member_since").notNull().default(2024),
     avatarUrl: text("avatar_url"),
+    timezone: text("timezone").notNull().default("Europe/Paris"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -117,7 +118,7 @@ export const trades = pgTable(
     htfBias: text("htf_bias").notNull().default(""),
     managementNotes: text("management_notes").notNull().default(""),
     planRespect: integer("plan_respect").notNull().default(5),
-    tradeOutcome: text("trade_outcome").notNull().default("TP touché"),
+    tradeOutcome: text("trade_outcome").notNull().default("TP touchÃƒÆ’Ã‚Â©"),
 
     // Screenshots and conclusions
     screenshots: text("screenshots").notNull().default("{}"),

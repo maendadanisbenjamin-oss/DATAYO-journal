@@ -6,6 +6,7 @@ export type Profile = {
   bio: string;
   memberSince: number;
   avatarUrl: string | null;
+  timezone: string;
   role?: "admin" | "member";
   createdAt: string;
 };

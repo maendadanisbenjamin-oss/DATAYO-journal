@@ -347,7 +347,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <MarketClock d={d} lang={lang} />
+            <MarketClock d={d} lang={lang} timezone={profile.timezone} />
             <LangToggle lang={lang} onChange={changeLang} />
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>

@@ -18,11 +18,20 @@ export async function PATCH(req: Request) {
   if (typeof b.title === "string") patch.title = b.title.trim().slice(0, 80);
   if (typeof b.bio === "string") patch.bio = b.bio.trim().slice(0, 600);
   if (Number.isFinite(Number(b.memberSince))) patch.memberSince = Math.max(1990, Math.min(2100, Number(b.memberSince)));
+  if (typeof b.timezone === "string") {
+    const timezone = b.timezone.trim();
+    try {
+      Intl.DateTimeFormat("en-US", { timeZone: timezone }).format();
+      patch.timezone = timezone;
+    } catch {
+      return NextResponse.json({ error: "Fuseau horaire invalide" }, { status: 400 });
+    }
+  }
   if (typeof b.email === "string") {
     const email = b.email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Email invalide" }, { status: 400 });
     const [dup] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.email, email), ne(profiles.id, me.id)));
-    if (dup) return NextResponse.json({ error: "Cet email est déjà utilisé" }, { status: 409 });
+    if (dup) return NextResponse.json({ error: "Cet email est dÃ©jÃ  utilisÃ©" }, { status: 409 });
     patch.email = email;
   }
   if (b.avatarUrl === null) patch.avatarUrl = null;
@@ -33,7 +42,7 @@ export async function PATCH(req: Request) {
     patch.avatarUrl = b.avatarUrl;
   }
   if (typeof b.newPassword === "string" && b.newPassword) {
-    if (b.newPassword.length < 8) return NextResponse.json({ error: "Mot de passe : 8 caractères minimum" }, { status: 400 });
+    if (b.newPassword.length < 8) return NextResponse.json({ error: "Mot de passe : 8 caractÃ¨res minimum" }, { status: 400 });
     if (!verifyPassword(String(b.currentPassword ?? ""), me.passwordHash)) {
       return NextResponse.json({ error: "Mot de passe actuel incorrect" }, { status: 403 });
     }
