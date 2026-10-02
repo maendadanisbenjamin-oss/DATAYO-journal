@@ -69,7 +69,7 @@ export default function MarketClock({ d, lang, timezone }: { d: Dict; lang: "fr"
         (openMinutes < closeMinutes
           ? currentMinutes >= openMinutes && currentMinutes < closeMinutes
           : currentMinutes >= openMinutes || currentMinutes < closeMinutes),
-      time: `${String(p.h).padStart(2, "0")}:${String(p.m).padStart(2, "0")}`,
+      time: now ? now.toLocaleTimeString(lang === "fr" ? "fr-FR" : "en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: timezone }) : "--:--",
     };
   });
   const overlap = states[1].isOpen && states[2].isOpen;
