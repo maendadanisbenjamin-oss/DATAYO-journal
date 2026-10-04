@@ -607,7 +607,6 @@ export const brokerConnections = pgTable(
     accountId: uuid("account_id")
       .notNull()
       .references(() => accounts.id, { onDelete: "cascade" }),
-    accountBalance: real("account_balance"),
     platform: text("platform").notNull(), // mt4 | mt5
     brokerName: text("broker_name").notNull().default(""),
     brokerAccountId: text("broker_account_id").notNull(),
