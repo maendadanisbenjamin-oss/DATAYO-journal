@@ -71,6 +71,13 @@
       "when": 1790886372120,
       "tag": "0009_flashy_gertrude_yorkes",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790941132132,
+      "tag": "0010_cultured_marvel_apes",
+      "breakpoints": true
     }
   ]
 }

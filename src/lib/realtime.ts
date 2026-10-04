@@ -4,7 +4,7 @@ import { Client } from "pg";
 import { pool } from "@/db";
 
 export type RealtimeEvent = {
-  type: "profile" | "accounts" | "trades" | "security";
+  type: "profile" | "accounts" | "trades" | "security" | "notifications";
   profileId: string;
   ts: number;
 };

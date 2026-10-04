@@ -42,6 +42,28 @@ export const profiles = pgTable(
   ]
 );
 
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    profileId: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    metadata: text("metadata").notNull().default("{}"),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("notifications_profile_idx").on(t.profileId),
+    index("notifications_profile_read_idx").on(t.profileId, t.readAt),
+    index("notifications_created_at_idx").on(t.createdAt),
+  ]
+);
 export const sessions = pgTable(
   "sessions",
   {
