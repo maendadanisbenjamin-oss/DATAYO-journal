@@ -5,6 +5,7 @@ import { type Lang, t as tr } from "@/lib/i18n";
 import type { Account, AccountInput, Bootstrap, Profile, Tab, Trade, TradeAccount, TradeAccountInput, TradeInput } from "@/lib/types";
 import AuthScreen from "./auth-screen";
 import MarketClock from "./market-clock";
+import NotificationsBell from "./notifications-bell";
 import { AccountModal, ProfileModal, TradeDetailModal, TradeModal } from "./modals";
 import Sidebar from "./sidebar";
 import {
@@ -118,6 +119,7 @@ export default function Dashboard() {
 
   // Realtime: SSE with browser auto-reconnect and polling fallback
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [notificationRefresh, setNotificationRefresh] = useState(0);
   const liveRef = useRef(false);
   useEffect(() => {
     liveRef.current = live;
@@ -141,7 +143,17 @@ export default function Dashboard() {
           setLive(true);
           liveRef.current = true;
         });
-        es.addEventListener("change", () => scheduleReload());
+        es.addEventListener("change", (event) => {
+          scheduleReload();
+          try {
+            const ev = JSON.parse((event as MessageEvent).data) as {
+              type?: string;
+            };
+            if (ev.type === "notifications") {
+              setNotificationRefresh((value) => value + 1);
+            }
+          } catch {}
+        });
         es.onerror = () => {
           setLive(false);
           liveRef.current = false;
@@ -348,6 +360,7 @@ export default function Dashboard() {
 
           <div className="flex flex-wrap items-center gap-3">
             <MarketClock d={d} lang={lang} timezone={profile.timezone} />
+            <NotificationsBell refreshKey={notificationRefresh} />
             <LangToggle lang={lang} onChange={changeLang} />
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>

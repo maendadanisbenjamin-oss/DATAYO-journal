@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { profiles } from "@/db/schema";
 import { hashPassword, publicProfile } from "@/lib/auth";
+import { notifyAdminsOfRegistration } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,16 @@ export async function POST(req: Request) {
       memberSince: new Date().getFullYear(),
     })
     .returning();
+
+  try {
+    await notifyAdminsOfRegistration({
+      profileId: profile.id,
+      displayName: profile.displayName,
+      email: profile.email,
+    });
+  } catch (error) {
+    console.error("Echec de la notification des administrateurs:", error);
+  }
 
   return NextResponse.json(
     {
