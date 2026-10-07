@@ -14,7 +14,8 @@ import {
   JournalTradesTab,
   ProfileAccountsTab,
 } from "./tabs";
-import { BacktestingTab, EconomicCalendarTab, MarketReplayTab } from "./market-tabs";
+import { EconomicCalendarTab } from "./market-tabs";
+import MarketHomeTab from "./market-home-tab";
 import AdminTab from "./admin-tab";
 import { LangToggle, ThemeToggle, Toasts } from "./ui";
 
@@ -34,7 +35,7 @@ export default function Dashboard() {
   const [devMode, setDevMode] = useState(false);
 
   // Modals state
-  const [tradeModal, setTradeModal] = useState<{ open: boolean; trade: Trade | null }>({
+  const [tradeModal, setTradeModal] = useState<{ open: boolean; trade: Trade | null; preset?: Partial<TradeInput> }>({
     open: false,
     trade: null,
   });
@@ -282,13 +283,13 @@ export default function Dashboard() {
     await load(true);
   };
 
-  const openNewTrade = () => {
+  const openNewTrade = (preset?: Partial<TradeInput>) => {
     if (!accounts.length) {
       setTab("profile_accounts");
       toast(d.noAccounts, "err");
       return;
     }
-    setTradeModal({ open: true, trade: null });
+    setTradeModal({ open: true, trade: null, preset });
   };
 
   const currency = accounts[0]?.currency ?? "USD";
@@ -400,10 +401,12 @@ export default function Dashboard() {
           />
         )}
 
-        {tab === "market_replay" && <MarketReplayTab d={d} lang={lang} accounts={accounts} />}
-
-        {tab === "backtesting" && (
-          <BacktestingTab d={d} lang={lang} accounts={accounts} liveTrades={trades} />
+        {tab === "market" && (
+          <MarketHomeTab
+            d={d}
+            lang={lang}
+            onCreateJournalTrade={(preset) => openNewTrade(preset)}
+          />
         )}
 
         {tab === "economic_calendar" && <EconomicCalendarTab d={d} lang={lang} />}
@@ -420,6 +423,7 @@ export default function Dashboard() {
           d={d}
           accounts={accounts}
           trade={tradeModal.trade}
+          preset={tradeModal.preset}
           tradeAccounts={tradeAccounts}
           onClose={() => setTradeModal({ open: false, trade: null })}
           onSave={saveTrade}

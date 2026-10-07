@@ -5,7 +5,7 @@ import type { EconomicEvent, MarketCandle } from "@/lib/types";
 
 const UP = "#34d399";
 const DOWN = "#f87171";
-const GOLD = "#d8b56d";
+const GOLD = "#00e5b7";
 const FONT = "var(--font-num), monospace";
 
 function ticks(min: number, max: number, count = 5) {
@@ -31,10 +31,12 @@ export default function MarketChart({
   candles,
   events = [],
   height = 380,
+  onPriceSelect,
 }: {
   candles: MarketCandle[];
   events?: EconomicEvent[];
   height?: number;
+  onPriceSelect?: (price: number) => void;
 }) {
   const [selectedEvent, setSelectedEvent] = useState<EconomicEvent | null>(null);
   const W = 1000;
@@ -77,7 +79,20 @@ export default function MarketChart({
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-line bg-[#090711]/30 p-2">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height }} role="img" aria-label="Trading chart with price and time axes">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className={`w-full${onPriceSelect ? " cursor-crosshair" : ""}`}
+        style={{ height }}
+        role="img"
+        aria-label="Trading chart with price and time axes"
+        onClick={(event) => {
+          if (!onPriceSelect) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          const y = ((event.clientY - rect.top) / rect.height) * H;
+          const ratio = (MT + ih - y) / ih;
+          onPriceSelect(Number((model.y.lo + ratio * (model.y.hi - model.y.lo)).toPrecision(8)));
+        }}
+      >
         <defs>
           <linearGradient id="chart-background" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0" stopColor="rgba(216,181,109,0.05)" />

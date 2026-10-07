@@ -3,6 +3,15 @@ import { desc, eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { profiles, sessions } from "@/db/schema";
 import { publicProfile, requireAdmin, unauthorized } from "@/lib/auth";
+import { notifyProfile } from "@/lib/notifications";
+
+async function notifyStatus(profileId: string, type: string, title: string, message: string) {
+  try {
+    await notifyProfile({ profileId, type, title, message });
+  } catch (error) {
+    console.error("Impossible d'enregistrer la notification de statut :", error);
+  }
+}
 
 export const dynamic = "force-dynamic";
 
@@ -168,6 +177,8 @@ export async function PATCH(req: Request) {
       .where(eq(profiles.id, id))
       .returning();
 
+    await notifyStatus(id, "account_approved", "Compte activé", "Votre demande d'inscription a été approuvée. Vous pouvez maintenant accéder à DATAYO-journal.");
+
     return NextResponse.json({ profile: publicProfile(updated) });
   }
 
@@ -191,6 +202,8 @@ export async function PATCH(req: Request) {
       })
       .where(eq(profiles.id, id))
       .returning();
+
+    await notifyStatus(id, "account_rejected", "Demande refusée", rejectionReason ? `Votre demande d'inscription a été refusée : ${rejectionReason}` : "Votre demande d'inscription a été refusée.");
 
     return NextResponse.json({ profile: publicProfile(updated) });
   }
@@ -216,6 +229,8 @@ export async function PATCH(req: Request) {
 
     await db.delete(sessions).where(eq(sessions.profileId, id));
 
+    await notifyStatus(id, "account_suspended", "Compte suspendu", "Votre compte DATAYO-journal a été suspendu. Contactez un administrateur pour plus d'informations.");
+
     return NextResponse.json({ profile: publicProfile(updated) });
   }
 
@@ -239,6 +254,8 @@ export async function PATCH(req: Request) {
     })
     .where(eq(profiles.id, id))
     .returning();
+
+  await notifyStatus(id, "account_reactivated", "Compte réactivé", "Votre compte DATAYO-journal a été réactivé.");
 
   return NextResponse.json({ profile: publicProfile(updated) });
 }

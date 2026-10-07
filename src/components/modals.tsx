@@ -80,6 +80,7 @@ export function TradeModal({
   d,
   accounts,
   trade,
+  preset,
   tradeAccounts,
   onClose,
   onSave,
@@ -87,6 +88,7 @@ export function TradeModal({
   d: Dict;
   accounts: Account[];
   trade: Trade | null;
+  preset?: Partial<TradeInput>;
   tradeAccounts: TradeAccount[];
   onClose: () => void;
   onSave: (t: TradeInput, accounts: TradeAccountInput[], id?: string) => Promise<void>;
@@ -138,6 +140,7 @@ export function TradeModal({
 
       screenshots: JSON.stringify(initialScreenshots),
       lessonsLearned: "",
+      ...preset,
     }
   );
 

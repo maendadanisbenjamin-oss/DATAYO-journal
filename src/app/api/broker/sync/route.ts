@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { accounts, brokerConnections } from "@/db/schema";
 import { requireUser, unauthorized } from "@/lib/auth";
 import { syncBroker } from "@/lib/broker-sync-service";
+import { notifyProfile } from "@/lib/notifications";
 import type { BrokerSyncMode } from "@/lib/broker/types";
 
 export const dynamic = "force-dynamic";
@@ -124,6 +125,18 @@ export async function POST(req: Request) {
       to,
     });
 
+    try {
+      await notifyProfile({
+        profileId: me.id,
+        type: "broker_sync_completed",
+        title: "Synchronisation terminée",
+        message: "La synchronisation broker s'est terminée avec succès.",
+        metadata: { connectionId: connection.id, mode },
+      });
+    } catch (notificationError) {
+      console.error("Impossible d'enregistrer la notification de synchronisation :", notificationError);
+    }
+
     return NextResponse.json({
       ok: true,
       mode,
@@ -135,6 +148,18 @@ export async function POST(req: Request) {
       error instanceof Error
         ? error.message
         : "Erreur de synchronisation broker.";
+
+    try {
+      await notifyProfile({
+        profileId: me.id,
+        type: "broker_sync_failed",
+        title: "Échec de synchronisation",
+        message,
+        metadata: { connectionId: connection.id, mode },
+      });
+    } catch (notificationError) {
+      console.error("Impossible d'enregistrer la notification d'échec broker :", notificationError);
+    }
 
     return NextResponse.json(
       {

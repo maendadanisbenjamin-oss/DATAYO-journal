@@ -8,12 +8,10 @@ import {
   ChevronsLeft,
   ChevronsRight,
   LineChart,
-  FlaskConical,
   LogOut,
   Menu,
   PieChart,
   Plus,
-  RotateCcw,
   UserCheck,
   X,
 } from "lucide-react";
@@ -50,20 +48,23 @@ export default function Sidebar({
     { id: "evolution_performance", label: d.evolutionPerformance, icon: <LineChart size={18} /> },
     { id: "journal_trades", label: d.journalTrades, icon: <BookOpen size={18} /> },
     { id: "analysis_stats", label: d.analysisStats, icon: <PieChart size={18} /> },
-    { id: "market_replay", label: d.marketReplay, icon: <RotateCcw size={18} /> },
-    { id: "backtesting", label: d.backtesting, icon: <FlaskConical size={18} /> },
+    { id: "market", label: d.market, icon: <BarChart3 size={18} /> },
     { id: "economic_calendar", label: d.economicCalendar, icon: <CalendarDays size={18} /> },
     ...(profile.role === "admin" ? [{ id: "admin" as Tab, label: d.administration, icon: <ShieldCheck size={18} /> }] : []),
   ];
 
   const logo = (
     <div className="flex items-center gap-3">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#f0d9a8] to-[#c9a557] text-[#17130a] shadow-[0_0_24px_-6px_rgba(216,181,109,0.6)]">
-        <span className="font-extrabold text-[17px] font-sans">Y</span>
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#00e5b7]/40 bg-[#0b1520] shadow-[0_0_24px_-6px_rgba(0,229,183,0.6)]">
+        <svg viewBox="0 0 48 48" className="h-7 w-7" aria-hidden="true">
+          <defs><linearGradient id="datayo-mark" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#00e5b7" /><stop offset="1" stopColor="#00b8d9" /></linearGradient></defs>
+          <path fill="url(#datayo-mark)" d="M8 5h20c10 0 17 7 17 17s-7 21-18 21H8l14-14h8c4 0 7-3 7-7s-3-7-7-7H8z" />
+          <path fill="#0b1520" d="M8 21h19L8 40z" />
+        </svg>
       </span>
       <div className="flex flex-col">
-        <span className="text-[14.5px] font-extrabold tracking-tight text-white leading-none">Journal</span>
-        <span className="text-[10px] uppercase tracking-widest text-gold font-bold mt-0.5">Trading Desk</span>
+        <span className="text-[14.5px] font-extrabold tracking-[0.16em] text-white leading-none">DATAYO</span>
+        <span className="text-[9px] uppercase tracking-[0.14em] text-gold font-bold mt-1">Analyse · Backtest · Trade</span>
       </div>
     </div>
   );

@@ -7,8 +7,9 @@ const archivo = Archivo({ subsets: ["latin"], variable: "--font-archivo", weight
 const chivo = Chivo_Mono({ subsets: ["latin"], variable: "--font-num" });
 
 export const metadata: Metadata = {
-  title: "Trade Journal — Journal de Trading",
-  description: "Suivez, analysez et améliorez vos performances de trading.",
+  title: "DATAYO-journal — Analyse · Backtest · Trade",
+  applicationName: "DATAYO-journal",
+  description: "Journal de trading DATAYO : analysez vos trades, suivez vos performances et progressez.",
 };
 
 const themeScript = `(function(){try{var t=localStorage.getItem('tj-theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');}}catch(e){}})();`;

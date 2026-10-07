@@ -16,12 +16,14 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Profile } from "@/lib/types";
+import AdminMarketPanel from "./admin-market-panel";
 
 type AdminSection =
   | "overview"
   | "users"
   | "registrations"
   | "sessions"
+  | "market"
   | "maintenance";
 
 type Overview = {
@@ -91,6 +93,7 @@ const sections: Array<{
   { id: "users", label: "Utilisateurs", icon: Users },
   { id: "registrations", label: "Demandes d'inscription", icon: UserPlus },
   { id: "sessions", label: "Sessions", icon: ShieldCheck },
+  { id: "market", label: "Market", icon: Database },
   { id: "maintenance", label: "Maintenance", icon: ServerCog },
 ];
 
@@ -1165,6 +1168,8 @@ export default function AdminTab({ profile }: AdminTabProps) {
           )}
         </div>
       )}
+
+      {section === "market" && <AdminMarketPanel />}
     </div>
   );
 }

@@ -58,11 +58,11 @@ export default function AuthScreen({
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="hidden flex-col justify-between p-12 lg:flex">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#f0d9a8] to-[#c9a557] text-[#17130a] shadow-[0_0_24px_-6px_rgba(216,181,109,0.6)]">
-            <BarChart3 size={20} />
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#00e5b7]/40 bg-[#0b1520] text-[#00e5b7] shadow-[0_0_24px_-6px_rgba(0,229,183,0.6)]">
+            <span className="font-black tracking-tight">D</span>
           </span>
-          <span className="text-[15px] font-extrabold tracking-tight text-white">
-            {d.appName}
+          <span className="text-[15px] font-extrabold tracking-[0.16em] text-white">
+            DATAYO
           </span>
         </div>
 

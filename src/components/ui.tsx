@@ -16,7 +16,7 @@ export function initials(name: string) {
 export function Avatar({ name, url, size = 36, className }: { name: string; url?: string | null; size?: number; className?: string }) {
   return (
     <div
-      className={clsx("relative shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#efdcae] via-[#d8b56d] to-[#8a6c33] font-bold text-[#17130a]", className)}
+      className={clsx("relative shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#00e5b7] via-[#00b8d9] to-[#087b96] font-bold text-[#06151b]", className)}
       style={{ width: size, height: size, fontSize: size * 0.36 }}
     >
       {url ? (
@@ -69,7 +69,7 @@ export function ThemeToggle({ theme, onToggle }: { theme: "dark" | "light"; onTo
     >
       <span
         className={clsx(
-          "flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#f0d9a8] to-[#c9a557] text-[#17130a] shadow transition-transform duration-300",
+          "flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#00e5b7] to-[#00b8d9] text-[#06151b] shadow transition-transform duration-300",
           theme === "light" ? "translate-x-[26px]" : "translate-x-0"
         )}
       >

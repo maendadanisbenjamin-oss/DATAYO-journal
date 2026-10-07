@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import clsx from "clsx";
 import { fmtMoney, fmtR } from "@/lib/stats";
 
-const GOLD = "#d8b56d";
+const GOLD = "#00e5b7";
 const UP = "#34d399";
 const DOWN = "#f87171";
 const AXIS = "var(--color-mut)";

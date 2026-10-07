@@ -121,6 +121,7 @@ export type Tab =
   | "evolution_performance"
   | "journal_trades"
   | "analysis_stats"
+  | "market"
   | "market_replay"
   | "backtesting"
   | "economic_calendar"
