@@ -41,14 +41,12 @@ export default function NotificationsBell({
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
-
-  useEffect(() => {
-    if (refreshKey > 0) {
+    const timeoutId = window.setTimeout(() => {
       void load();
-    }
-  }, [refreshKey, load]);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [load, refreshKey]);
 
   const unreadCount = useMemo(
     () => items.filter((item) => !item.readAt).length,
