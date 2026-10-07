@@ -10,6 +10,7 @@
   --color-mut: #8da9b8;
   --color-gold: #00e5b7;
   --color-gold2: #00b8d9;
+  --color-on-gold: #06151b;
   --color-accent: #1ed760;
   --color-up: #34d399;
   --color-down: #f87171;
@@ -25,11 +26,12 @@
   --color-white: #0b1520;
   --color-ink: #0f1a23;
   --color-mut: #58717f;
-  --color-gold: #008f83;
-  --color-gold2: #007c9a;
+  --color-gold: #00776f;
+  --color-gold2: #006b83;
+  --color-on-gold: #ffffff;
   --color-accent: #148b42;
-  --color-up: #0f9d6a;
-  --color-down: #dc4b4b;
+  --color-up: #087343;
+  --color-down: #a51f30;
   --shadow-card: 0 10px 30px -18px rgba(40, 30, 80, 0.25);
   --tooltip-bg: #1b1726;
 }
@@ -44,6 +46,7 @@
   --color-mut: var(--color-mut);
   --color-gold: var(--color-gold);
   --color-gold2: var(--color-gold2);
+  --color-on-gold: var(--color-on-gold);
   --color-up: var(--color-up);
   --color-down: var(--color-down);
   --font-sans: Inter, var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
@@ -67,6 +70,11 @@ body {
 
 ::selection {
   background: rgba(0, 229, 183, 0.35);
+}
+
+:where(button, a, [tabindex="0"], input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
 }
 
 .mono,
@@ -103,6 +111,7 @@ body {
   transition: all 0.18s ease;
   cursor: pointer;
   white-space: nowrap;
+  min-height: 44px;
 }
 .yj-btn:disabled {
   opacity: 0.5;
@@ -200,6 +209,7 @@ body {
   transition: all 0.18s ease;
   width: 100%;
   text-align: left;
+  min-height: 44px;
 }
 .yj-navitem:hover {
   color: var(--color-white);
@@ -228,6 +238,9 @@ body {
   color: var(--color-mut);
   transition: all 0.15s;
   cursor: pointer;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 .yj-chip:hover {
   color: var(--color-white);

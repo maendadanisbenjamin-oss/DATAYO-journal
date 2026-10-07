@@ -1,11 +1,12 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import clsx from "clsx";
+import type { Lang } from "@/lib/i18n";
 import type { EconomicEvent, MarketCandle } from "@/lib/types";
 
 const UP = "#34d399";
 const DOWN = "#f87171";
-const GOLD = "#00e5b7";
+const GOLD = "var(--color-gold)";
 const FONT = "var(--font-num), monospace";
 
 function ticks(min: number, max: number, count = 5) {
@@ -30,15 +31,26 @@ const price = (value: number) => {
 export default function MarketChart({
   candles,
   events = [],
-  height = 380,
   onPriceSelect,
+  selectedPrice,
+  lang = "fr",
+  chartLabel = "Market price chart",
+  keyboardHint = "Use the up and down arrow keys to adjust the selected price.",
+  closeEventLabel = "Close event details",
+  emptyLabel = "Import validated M1 data to display the chart.",
 }: {
   candles: MarketCandle[];
   events?: EconomicEvent[];
-  height?: number;
   onPriceSelect?: (price: number) => void;
+  selectedPrice?: number | null;
+  lang?: Lang;
+  chartLabel?: string;
+  keyboardHint?: string;
+  closeEventLabel?: string;
+  emptyLabel?: string;
 }) {
   const [selectedEvent, setSelectedEvent] = useState<EconomicEvent | null>(null);
+  const hintId = useId();
   const W = 1000;
   const H = 460;
   const ML = 64;
@@ -67,7 +79,7 @@ export default function MarketChart({
   }, [candles, events, ih, iw]);
 
   if (!model) {
-    return <div className="flex h-[380px] items-center justify-center rounded-2xl border border-dashed border-line text-[13px] text-mut">Importez des données M1 validées pour afficher le graphique.</div>;
+    return <div className="flex h-[380px] items-center justify-center rounded-2xl border border-dashed border-line px-4 text-center text-[13px] text-mut">{emptyLabel}</div>;
   }
 
   const candleWidth = Math.max(1.4, (iw / model.visible.length) * 0.62);
@@ -78,25 +90,42 @@ export default function MarketChart({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-line bg-[#090711]/30 p-2">
+    <div className="relative min-w-0 overflow-x-auto rounded-2xl border border-line bg-panel/30 p-2">
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className={`w-full${onPriceSelect ? " cursor-crosshair" : ""}`}
-        style={{ height }}
-        role="img"
-        aria-label="Trading chart with price and time axes"
+        className={clsx("block h-auto w-full min-w-[720px]", onPriceSelect && "cursor-crosshair")}
+        style={{ height: "auto", aspectRatio: `${W} / ${H}` }}
+        role="group"
+        aria-label={chartLabel}
+        aria-describedby={onPriceSelect ? hintId : undefined}
+        aria-keyshortcuts={onPriceSelect ? "ArrowUp ArrowDown" : undefined}
+        tabIndex={onPriceSelect ? 0 : undefined}
         onClick={(event) => {
           if (!onPriceSelect) return;
-          const rect = event.currentTarget.getBoundingClientRect();
-          const y = ((event.clientY - rect.top) / rect.height) * H;
+          const svg = event.currentTarget;
+          const matrix = svg.getScreenCTM();
+          if (!matrix) return;
+          const point = svg.createSVGPoint();
+          point.x = event.clientX;
+          point.y = event.clientY;
+          const { x, y } = point.matrixTransform(matrix.inverse());
+          if (x < ML || x > W - MR || y < MT || y > MT + ih) return;
           const ratio = (MT + ih - y) / ih;
           onPriceSelect(Number((model.y.lo + ratio * (model.y.hi - model.y.lo)).toPrecision(8)));
+        }}
+        onKeyDown={(event) => {
+          if (!onPriceSelect || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
+          event.preventDefault();
+          const step = Math.abs(model.y.result[1]! - model.y.result[0]!) || (model.y.hi - model.y.lo) / 100;
+          const current = selectedPrice ?? model.visible.at(-1)!.close;
+          const next = current + (event.key === "ArrowUp" ? step : -step);
+          onPriceSelect(Number(Math.max(model.y.lo, Math.min(model.y.hi, next)).toPrecision(8)));
         }}
       >
         <defs>
           <linearGradient id="chart-background" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor="rgba(216,181,109,0.05)" />
-            <stop offset="1" stopColor="rgba(0,0,0,0)" />
+            <stop offset="0" stopColor={GOLD} stopOpacity="0.08" />
+            <stop offset="1" stopColor={GOLD} stopOpacity="0" />
           </linearGradient>
         </defs>
         <rect x={ML} y={MT} width={iw} height={ih} fill="url(#chart-background)" />
@@ -117,27 +146,50 @@ export default function MarketChart({
           const date = new Date(candle.ts);
           return (
             <text key={candle.ts} x={model.sx(index)} y={H - 27} textAnchor="middle" fontSize="10.5" fontFamily={FONT} fill="var(--color-mut)">
-              {date.toLocaleString("en-GB", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })}
+              {date.toLocaleString(lang === "fr" ? "fr-FR" : "en-GB", { timeZone: "UTC", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })}
             </text>
           );
         })}
         <line x1={ML} y1={MT} x2={ML} y2={MT + ih} stroke="var(--color-line)" />
         <line x1={ML} y1={MT + ih} x2={W - MR} y2={MT + ih} stroke="var(--color-line)" />
-        <text x={ML + iw / 2} y={H - 6} textAnchor="middle" fontSize="10" fontWeight="600" letterSpacing="1.4" fill="var(--color-mut)">TEMPS (UTC)</text>
-        <text transform={`translate(14 ${MT + ih / 2}) rotate(-90)`} textAnchor="middle" fontSize="10" fontWeight="600" letterSpacing="1.4" fill="var(--color-mut)">PRIX</text>
+        <text x={ML + iw / 2} y={H - 6} textAnchor="middle" fontSize="10" fontWeight="600" letterSpacing="1.4" fill="var(--color-mut)">{lang === "fr" ? "TEMPS (UTC)" : "TIME (UTC)"}</text>
+        <text transform={`translate(14 ${MT + ih / 2}) rotate(-90)`} textAnchor="middle" fontSize="10" fontWeight="600" letterSpacing="1.4" fill="var(--color-mut)">{lang === "fr" ? "PRIX" : "PRICE"}</text>
 
         {/* Economic event markers */}
         {model.eventItems.map((event) => {
           const x = eventX(event);
           const color = event.importance === "high" ? DOWN : event.importance === "medium" ? GOLD : "#7aa2f7";
           return (
-            <g key={event.id} className="cursor-pointer" onClick={() => setSelectedEvent(event)}>
+            <g
+              key={event.id}
+              className="cursor-pointer outline-none focus-visible:opacity-70"
+              role="button"
+              tabIndex={0}
+              aria-label={`${event.currency || "NEWS"}: ${event.title}`}
+              aria-expanded={selectedEvent?.id === event.id}
+              onClick={(interaction) => { interaction.stopPropagation(); setSelectedEvent(event); }}
+              onKeyDown={(interaction) => {
+                if (interaction.key === "Enter" || interaction.key === " ") {
+                  interaction.preventDefault();
+                  interaction.stopPropagation();
+                  setSelectedEvent(event);
+                }
+              }}
+            >
               <line x1={x} y1={MT} x2={x} y2={MT + ih} stroke={color} strokeWidth="1.2" strokeDasharray="4 3" opacity="0.85" />
               <circle cx={x} cy={MT + 8} r="5" fill={color} />
               <text x={x} y={MT + 23} textAnchor="middle" fontSize="9" fontWeight="700" fill={color}>{event.currency || "NEWS"}</text>
             </g>
           );
         })}
+
+        {selectedPrice != null && Number.isFinite(selectedPrice) && selectedPrice >= model.y.lo && selectedPrice <= model.y.hi && (
+          <g aria-hidden="true">
+            <line x1={ML} y1={model.sy(selectedPrice)} x2={W - MR} y2={model.sy(selectedPrice)} stroke={GOLD} strokeWidth="1.5" strokeDasharray="5 3" />
+            <rect x={W - MR - 78} y={model.sy(selectedPrice) - 13} width="76" height="20" rx="4" fill="var(--color-gold)" />
+            <text x={W - MR - 40} y={model.sy(selectedPrice) + 1} textAnchor="middle" fontSize="10" fontFamily={FONT} fill="var(--color-bg)">{price(selectedPrice)}</text>
+          </g>
+        )}
 
         {/* Candles */}
         {model.visible.map((candle, index) => {
@@ -157,9 +209,16 @@ export default function MarketChart({
         })}
       </svg>
 
+      {onPriceSelect && <p id={hintId} className="sr-only">{keyboardHint}</p>}
+      {onPriceSelect && selectedPrice != null && (
+        <p className="sr-only" aria-live="polite">
+          {lang === "fr" ? "Prix d’entrée sélectionné" : "Selected entry price"}: {selectedPrice.toLocaleString(lang === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 6 })}
+        </p>
+      )}
+
       {selectedEvent && (
-        <div className="absolute right-4 top-4 z-10 w-64 rounded-xl border border-gold/40 bg-panel/95 p-3 shadow-2xl backdrop-blur">
-          <button className="absolute right-2 top-1 text-mut hover:text-white" onClick={() => setSelectedEvent(null)}>×</button>
+        <div role="status" aria-live="polite" className="absolute right-4 top-4 z-10 w-64 rounded-xl border border-gold/40 bg-panel p-3 shadow-2xl">
+          <button type="button" aria-label={closeEventLabel} className="absolute right-2 top-1 flex h-11 w-11 items-center justify-center rounded-lg text-lg text-mut hover:bg-white/5 hover:text-white" onClick={() => setSelectedEvent(null)}>×</button>
           <p className="pr-4 text-[13px] font-bold text-white">{selectedEvent.title}</p>
           <p className="mt-1 text-[11px] text-gold">{selectedEvent.currency} · {selectedEvent.importance.toUpperCase()}</p>
           <div className="mt-2 grid grid-cols-3 gap-1 text-center text-[10.5px]">

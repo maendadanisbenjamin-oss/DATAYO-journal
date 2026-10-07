@@ -81,11 +81,11 @@ export default function NotificationsBell({
         type="button"
         aria-label="Notifications"
         onClick={() => setOpen((value) => !value)}
-        className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+        className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       >
         <span aria-hidden="true">&#x1F514;</span>
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-gold px-1 text-center text-[10px] font-bold leading-5 text-black">
+          <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-gold px-1 text-center text-[10px] font-bold leading-5 text-on-gold">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

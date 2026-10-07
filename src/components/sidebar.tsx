@@ -74,6 +74,8 @@ export default function Sidebar({
       {items.map((it) => (
         <button
           key={it.id}
+          type="button"
+          aria-current={active === it.id ? "page" : undefined}
           onClick={() => {
             onChange(it.id);
             setOpen(false);
@@ -122,7 +124,9 @@ export default function Sidebar({
           <div className="flex items-center justify-between px-5">
             {logo}
             <button
+              type="button"
               onClick={onToggle}
+              aria-label={d.hideMenu}
               title={d.hideMenu}
               className="rounded-lg p-1.5 text-mut hover:bg-white/5 hover:text-gold transition"
             >
@@ -144,8 +148,10 @@ export default function Sidebar({
       <button
         onClick={onToggle}
         title={d.showMenu}
+        type="button"
+        aria-label={d.showMenu}
         className={clsx(
-          "fixed left-4 top-5 z-50 hidden h-10 w-10 items-center justify-center rounded-xl border border-line bg-panel/90 text-mut shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-gold/40 hover:text-gold md:flex",
+          "fixed left-4 top-5 z-50 hidden h-11 w-11 items-center justify-center rounded-xl border border-line bg-panel/90 text-mut shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-gold/40 hover:text-gold md:flex",
           collapsed ? "translate-x-0 opacity-100 delay-150" : "pointer-events-none -translate-x-16 opacity-0"
         )}
       >
@@ -155,7 +161,7 @@ export default function Sidebar({
       {/* Mobile Top Bar */}
       <div className="sticky top-0 z-40 flex items-center justify-between border-b border-line bg-sidebar/92 px-4 py-3 backdrop-blur-xl md:hidden">
         {logo}
-        <button onClick={() => setOpen(true)} className="rounded-lg p-2 text-mut hover:text-white">
+        <button type="button" aria-label={d.showMenu} onClick={() => setOpen(true)} className="flex h-11 w-11 items-center justify-center rounded-lg text-mut hover:text-white">
           <Menu size={20} />
         </button>
       </div>
@@ -170,7 +176,7 @@ export default function Sidebar({
             <div className="space-y-6">
               <div className="flex items-center justify-between px-5">
                 {logo}
-                <button onClick={() => setOpen(false)} className="text-mut hover:text-white">
+                <button type="button" aria-label={d.close} onClick={() => setOpen(false)} className="flex h-11 w-11 items-center justify-center text-mut hover:text-white">
                   <X size={20} />
                 </button>
               </div>

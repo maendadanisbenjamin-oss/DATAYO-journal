@@ -222,6 +222,7 @@ export function TradeModal({
     <Modal
       title={trade ? d.editTrade : d.newTrade}
       onClose={onClose}
+      closeLabel={d.close}
       wide
       footer={
         <div className="flex w-full items-center justify-between">
@@ -282,7 +283,7 @@ export function TradeModal({
             <span
               className={clsx(
                 "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold",
-                step === s.num ? "bg-gold text-[#17130a]" : "bg-white/10 text-mut"
+                step === s.num ? "bg-gold text-on-gold" : "bg-white/10 text-mut"
               )}
             >
               {s.num}
@@ -819,6 +820,7 @@ export function TradeDetailModal({
       <Modal
         title={`${d.tradeDetails} · ${trade.symbol}`}
         onClose={onClose}
+        closeLabel={d.close}
         wide
         footer={
           <div className="flex w-full items-center justify-between">
@@ -1124,7 +1126,9 @@ export function TradeDetailModal({
           <div className="relative max-h-[90vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setZoomImg(null)}
-              className="absolute -right-3 -top-3 rounded-full bg-panel p-2 text-white shadow-xl hover:bg-gold hover:text-black"
+              type="button"
+              aria-label={d.close}
+              className="absolute -right-3 -top-3 flex h-11 w-11 items-center justify-center rounded-full bg-panel text-white shadow-xl hover:bg-gold hover:text-on-gold"
             >
               <X size={18} />
             </button>
@@ -1157,6 +1161,7 @@ export function AccountModal({
     <Modal
       title={account ? d.editAccount : d.newAccount}
       onClose={onClose}
+      closeLabel={d.close}
       footer={
         <>
           <button className="yj-btn yj-btn-ghost" onClick={onClose}>
@@ -1300,6 +1305,7 @@ export function ProfileModal({
     <Modal
       title={d.editProfile}
       onClose={onClose}
+      closeLabel={d.close}
       wide
       footer={
         <>

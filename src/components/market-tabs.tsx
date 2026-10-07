@@ -295,16 +295,16 @@ function MarketDataLibrary({
       {open && (
         <div className="border-t border-line p-5">
           <div className="mb-4 flex rounded-xl border border-line bg-white/[0.02] p-1 text-[12px] font-bold">
-            <button onClick={() => setTab("instrument")} className={clsx("flex-1 rounded-lg px-3 py-2 transition", tab === "instrument" ? "bg-gold text-[#17130a]" : "text-mut hover:text-white")}>
+            <button type="button" onClick={() => setTab("instrument")} className={clsx("flex-1 min-h-11 rounded-lg px-3 py-2 transition", tab === "instrument" ? "bg-gold text-on-gold" : "text-mut hover:text-white")}>
               {d.createInstrument}
             </button>
             <button onClick={() => {
               setTab("spec");
               void loadSpecs();
-            }} className={clsx("flex-1 rounded-lg px-3 py-2 transition", tab === "spec" ? "bg-gold text-[#17130a]" : "text-mut hover:text-white")}>
+            }} type="button" className={clsx("flex-1 min-h-11 rounded-lg px-3 py-2 transition", tab === "spec" ? "bg-gold text-on-gold" : "text-mut hover:text-white")}>
               Spécification financière
             </button>
-            <button onClick={() => setTab("csv")} className={clsx("flex-1 rounded-lg px-3 py-2 transition", tab === "csv" ? "bg-gold text-[#17130a]" : "text-mut hover:text-white")}>
+            <button type="button" onClick={() => setTab("csv")} className={clsx("flex-1 min-h-11 rounded-lg px-3 py-2 transition", tab === "csv" ? "bg-gold text-on-gold" : "text-mut hover:text-white")}>
               {d.importCsv}
             </button>
           </div>
@@ -752,7 +752,7 @@ export function MarketReplayTab({ d, lang, accounts }: { d: Dict; lang: Lang; ac
                 <div className="flex items-center gap-2"><select className="yj-select !w-48 !py-1.5 text-[12px]" value={activeId} onChange={(e) => { setPlaying(false); setActiveId(e.target.value); }}><option value="">Session Replay</option>{sessions.map((session) => <option key={session.id} value={session.id}>{instruments.find((i) => i.id === session.instrumentId)?.symbol ?? "—"} · {new Date(session.startAt).toLocaleDateString()}</option>)}</select><span className="yj-badge yj-badge-gold">{activeInstrument?.symbol ?? "—"} · {snapshot.session.timeframe}</span></div>
               </div>
 
-              <MarketChart candles={snapshot.candles} events={snapshot.events} />
+              <MarketChart candles={snapshot.candles} events={snapshot.events} lang={lang} chartLabel={d.marketChartLabel} closeEventLabel={d.closeEventDetails} emptyLabel={d.noMarketCandles} />
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
                 <div className="flex items-center gap-2"><button className={clsx("yj-btn", playing ? "yj-btn-ghost" : "yj-btn-primary")} onClick={() => setPlaying((value) => !value)} disabled={busy}>{playing ? <><CirclePause size={16} />{d.pause}</> : <><CirclePlay size={16} />{d.play}</>}</button><button className="yj-btn yj-btn-ghost" onClick={() => void advance(1)} disabled={busy}><SkipForward size={16} />{d.nextCandle}</button></div>
