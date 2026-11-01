@@ -15,10 +15,27 @@ import {
   UserCheck,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { Dict } from "@/lib/i18n";
 import type { Profile, Tab } from "@/lib/types";
 import { Avatar } from "./ui";
+
+function BrandMark() {
+  const gradientId = `datayo-mark-${useId().replace(/:/g, "")}`;
+
+  return (
+    <svg viewBox="0 0 48 48" className="h-7 w-7" aria-hidden="true">
+      <defs>
+        <linearGradient id={gradientId} x1="8" y1="5" x2="45" y2="43" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#00e5b7" />
+          <stop offset="1" stopColor="#00b8d9" />
+        </linearGradient>
+      </defs>
+      <path fill={`url(#${gradientId})`} d="M8 5h20c10 0 17 7 17 17s-7 21-18 21H8l14-14h8c4 0 7-3 7-7s-3-7-7-7H8z" />
+      <path fill="#0b1520" d="M8 21h19L8 40z" />
+    </svg>
+  );
+}
 
 export default function Sidebar({
   d,
@@ -56,11 +73,7 @@ export default function Sidebar({
   const logo = (
     <div className="flex items-center gap-3">
       <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#00e5b7]/40 bg-[#0b1520] shadow-[0_0_24px_-6px_rgba(0,229,183,0.6)]">
-        <svg viewBox="0 0 48 48" className="h-7 w-7" aria-hidden="true">
-          <defs><linearGradient id="datayo-mark" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#00e5b7" /><stop offset="1" stopColor="#00b8d9" /></linearGradient></defs>
-          <path fill="url(#datayo-mark)" d="M8 5h20c10 0 17 7 17 17s-7 21-18 21H8l14-14h8c4 0 7-3 7-7s-3-7-7-7H8z" />
-          <path fill="#0b1520" d="M8 21h19L8 40z" />
-        </svg>
+        <BrandMark />
       </span>
       <div className="flex flex-col">
         <span className="text-[14.5px] font-extrabold tracking-[0.16em] text-white leading-none">DATAYO</span>
@@ -74,6 +87,8 @@ export default function Sidebar({
       {items.map((it) => (
         <button
           key={it.id}
+          type="button"
+          aria-current={active === it.id ? "page" : undefined}
           onClick={() => {
             onChange(it.id);
             setOpen(false);
@@ -122,7 +137,9 @@ export default function Sidebar({
           <div className="flex items-center justify-between px-5">
             {logo}
             <button
+              type="button"
               onClick={onToggle}
+              aria-label={d.hideMenu}
               title={d.hideMenu}
               className="rounded-lg p-1.5 text-mut hover:bg-white/5 hover:text-gold transition"
             >
@@ -144,8 +161,10 @@ export default function Sidebar({
       <button
         onClick={onToggle}
         title={d.showMenu}
+        type="button"
+        aria-label={d.showMenu}
         className={clsx(
-          "fixed left-4 top-5 z-50 hidden h-10 w-10 items-center justify-center rounded-xl border border-line bg-panel/90 text-mut shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-gold/40 hover:text-gold md:flex",
+          "fixed left-4 top-5 z-50 hidden h-11 w-11 items-center justify-center rounded-xl border border-line bg-panel/90 text-mut shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-gold/40 hover:text-gold md:flex",
           collapsed ? "translate-x-0 opacity-100 delay-150" : "pointer-events-none -translate-x-16 opacity-0"
         )}
       >
@@ -155,7 +174,7 @@ export default function Sidebar({
       {/* Mobile Top Bar */}
       <div className="sticky top-0 z-40 flex items-center justify-between border-b border-line bg-sidebar/92 px-4 py-3 backdrop-blur-xl md:hidden">
         {logo}
-        <button onClick={() => setOpen(true)} className="rounded-lg p-2 text-mut hover:text-white">
+        <button type="button" aria-label={d.showMenu} onClick={() => setOpen(true)} className="flex h-11 w-11 items-center justify-center rounded-lg text-mut hover:text-white">
           <Menu size={20} />
         </button>
       </div>
@@ -170,7 +189,7 @@ export default function Sidebar({
             <div className="space-y-6">
               <div className="flex items-center justify-between px-5">
                 {logo}
-                <button onClick={() => setOpen(false)} className="text-mut hover:text-white">
+                <button type="button" aria-label={d.close} onClick={() => setOpen(false)} className="flex h-11 w-11 items-center justify-center text-mut hover:text-white">
                   <X size={20} />
                 </button>
               </div>

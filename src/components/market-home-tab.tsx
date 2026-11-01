@@ -168,9 +168,19 @@ export default function MarketHomeTab({
               </div>
             </div>
             {loadingCandles && !candles.length ? <div className="flex h-[380px] items-center justify-center text-sm text-mut">{d.marketLoading}</div> : candles.length ? (
-              <MarketChart candles={candles} events={events} onPriceSelect={setSelectedPrice} />
+              <MarketChart
+                candles={candles}
+                events={events}
+                lang={lang}
+                selectedPrice={selectedPrice}
+                chartLabel={d.marketChartLabel}
+                keyboardHint={d.marketChartKeyboardHint}
+                closeEventLabel={d.closeEventDetails}
+                emptyLabel={d.noMarketCandles}
+                onPriceSelect={setSelectedPrice}
+              />
             ) : <div className="flex h-[380px] items-center justify-center rounded-2xl border border-dashed border-line px-6 text-center text-sm text-mut">{d.noMarketCandles}</div>}
-            <p className="mt-2 text-[11px] text-mut">Un clic sur le graphique sélectionne un prix d’entrée. Les repères économiques restent visibles lorsqu’ils existent dans la période affichée.</p>
+            <p className="mt-2 text-[11px] text-mut">{d.marketChartClickHint}</p>
           </section>
 
           <aside className="yj-card h-fit space-y-4 p-5">
@@ -179,8 +189,8 @@ export default function MarketHomeTab({
               <p className="mt-1 text-xs text-mut">{d.journalTradeFromChart}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setDirection("long")} className={`yj-btn justify-center ${direction === "long" ? "yj-btn-primary" : "yj-btn-ghost"}`}><TrendingUp size={15} />{d.buy}</button>
-              <button type="button" onClick={() => setDirection("short")} className={`yj-btn justify-center ${direction === "short" ? "yj-btn-primary" : "yj-btn-ghost"}`}><TrendingDown size={15} />{d.sell}</button>
+              <button type="button" aria-pressed={direction === "long"} onClick={() => setDirection("long")} className={`yj-btn justify-center ${direction === "long" ? "yj-btn-primary" : "yj-btn-ghost"}`}><TrendingUp size={15} />{d.buy}</button>
+              <button type="button" aria-pressed={direction === "short"} onClick={() => setDirection("short")} className={`yj-btn justify-center ${direction === "short" ? "yj-btn-primary" : "yj-btn-ghost"}`}><TrendingDown size={15} />{d.sell}</button>
             </div>
             <label className="block text-xs text-mut">{d.entry} · {lang === "fr" ? "cliquer sur le graphique pour choisir" : "click chart to select"}
               <input type="number" step="any" className="yj-input mono mt-1" value={selectedPrice ?? ""} onChange={(event) => setSelectedPrice(event.target.value ? Number(event.target.value) : null)} />

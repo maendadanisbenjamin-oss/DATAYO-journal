@@ -608,66 +608,72 @@ export function JournalTradesTab({
               </thead>
               <tbody>
                 {filtered.map((t) => (
-                  <tr key={t.id} className="cursor-pointer transition hover:bg-gold/[0.04]">
-                    <td className="mono text-mut" onClick={() => onViewTrade(t)}>
+                  <tr key={t.id} className="transition hover:bg-gold/[0.04]">
+                    <td className="mono text-mut">
                       {t.date}
                     </td>
-                    <td className="font-bold text-white" onClick={() => onViewTrade(t)}>
-                      {t.symbol}
+                    <td className="font-bold text-white">
+                      <button type="button" className="text-left hover:text-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold" aria-label={`${d.tradeDetails}: ${t.symbol}`} onClick={() => onViewTrade(t)}>
+                        {t.symbol}
+                      </button>
                     </td>
-                    <td onClick={() => onViewTrade(t)}>
+                    <td>
                       <span className={clsx("yj-badge", t.direction === "long" ? "yj-badge-up" : "yj-badge-down")}>
                         {t.direction === "long" ? "BUY" : "SELL"}
                       </span>
                     </td>
-                    <td className="text-mut capitalize" onClick={() => onViewTrade(t)}>
+                    <td className="text-mut capitalize">
                       {sessionLabel(d, t.session)}
                     </td>
-                    <td className="text-white font-medium" onClick={() => onViewTrade(t)}>
+                    <td className="text-white font-medium">
                       {t.ictModel || t.setup || "—"}
                     </td>
-                    <td className="text-gold font-medium" onClick={() => onViewTrade(t)}>
+                    <td className="text-gold font-medium">
                       {t.poiZone || "—"}
                     </td>
-                    <td className="text-mut" onClick={() => onViewTrade(t)}>
+                    <td className="text-mut">
                       {t.tradingType}
                     </td>
-                    <td className="text-mut font-medium" onClick={() => onViewTrade(t)}>
+                    <td className="text-mut font-medium">
                       {accName(t.accountId)}
                     </td>
-                    <td className="mono text-right text-mut" onClick={() => onViewTrade(t)}>
+                    <td className="mono text-right text-mut">
                       {t.riskPct}%
                     </td>
                     <td
                       className={clsx("mono text-right font-bold", t.rMultiple >= 0 ? "text-up" : "text-down")}
-                      onClick={() => onViewTrade(t)}
                     >
                       {fmtR(t.rMultiple)}
                     </td>
                     <td
                       className={clsx("mono text-right font-bold", t.pnl >= 0 ? "text-up" : "text-down")}
-                      onClick={() => onViewTrade(t)}
                     >
                       {fmtMoney(t.pnl, accCurrency(t.accountId), lang)}
                     </td>
                     <td className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          className="rounded-lg p-1.5 text-mut hover:bg-white/5 hover:text-white"
+                          type="button"
+                          aria-label={`${d.tradeDetails}: ${t.symbol}`}
+                          className="flex h-11 w-11 items-center justify-center rounded-lg text-mut hover:bg-white/5 hover:text-white"
                           title={d.tradeDetails}
                           onClick={() => onViewTrade(t)}
                         >
                           <Eye size={15} />
                         </button>
                         <button
-                          className="rounded-lg p-1.5 text-mut hover:bg-white/5 hover:text-gold"
+                          type="button"
+                          aria-label={`${d.edit}: ${t.symbol}`}
+                          className="flex h-11 w-11 items-center justify-center rounded-lg text-mut hover:bg-white/5 hover:text-gold"
                           title={d.edit}
                           onClick={() => onEditTrade(t)}
                         >
                           <Pencil size={15} />
                         </button>
                         <button
-                          className="rounded-lg p-1.5 text-mut hover:bg-white/5 hover:text-down"
+                          type="button"
+                          aria-label={`${d.delete}: ${t.symbol}`}
+                          className="flex h-11 w-11 items-center justify-center rounded-lg text-mut hover:bg-white/5 hover:text-down"
                           title={d.delete}
                           onClick={() => onDeleteTrade(t)}
                         >
@@ -1102,7 +1108,7 @@ export function AnalysisStatsTab({
                 className={clsx(
                   "flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition cursor-pointer",
                   weekCalcMode === "amount"
-                    ? "bg-gold text-[#17130a] shadow-sm"
+                    ? "bg-gold text-on-gold shadow-sm"
                     : "text-mut hover:text-white"
                 )}
                 title="Calculer les totaux en montant monétaire ($)"
@@ -1116,7 +1122,7 @@ export function AnalysisStatsTab({
                 className={clsx(
                   "flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition cursor-pointer",
                   weekCalcMode === "percent"
-                    ? "bg-gold text-[#17130a] shadow-sm"
+                    ? "bg-gold text-on-gold shadow-sm"
                     : "text-mut hover:text-white"
                 )}
                 title="Calculer les totaux en pourcentage du capital (%)"

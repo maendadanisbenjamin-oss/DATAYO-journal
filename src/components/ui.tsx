@@ -1,5 +1,5 @@
 "use client";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useId, useRef } from "react";
 import clsx from "clsx";
 import { Moon, Sun, X } from "lucide-react";
 import type { Lang } from "@/lib/i18n";
@@ -29,18 +29,47 @@ export function Avatar({ name, url, size = 36, className }: { name: string; url?
   );
 }
 
-export function Modal({ title, onClose, children, footer, wide }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
+export function Modal({ title, onClose, closeLabel, children, footer, wide }: { title: string; onClose: () => void; closeLabel: string; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
+  const dialogId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
   useEffect(() => {
-    const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialogRef.current?.querySelector<HTMLElement>("button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])")?.focus();
+    const h = (e: KeyboardEvent) => e.key === "Escape" && onCloseRef.current();
     window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [onClose]);
+    return () => {
+      window.removeEventListener("keydown", h);
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
+    };
+  }, []);
   return (
     <div className="yj-modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={clsx("yj-modal", wide && "!max-w-3xl")}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={dialogId}
+        onKeyDown={(event) => {
+          if (event.key !== "Tab" || !dialogRef.current) return;
+          const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])")).filter((element) => element.offsetParent !== null);
+          if (!focusable.length) { event.preventDefault(); return; }
+          const first = focusable[0]!;
+          const last = focusable[focusable.length - 1]!;
+          if (event.shiftKey && (document.activeElement === first || !dialogRef.current.contains(document.activeElement))) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current.contains(document.activeElement))) {
+            event.preventDefault();
+            first.focus();
+          }
+        }}
+        className={clsx("yj-modal", wide && "!max-w-3xl")}
+      >
         <div className="flex items-center justify-between border-b border-line px-6 py-4">
-          <h3 className="text-[16px] font-bold text-white">{title}</h3>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-mut hover:bg-white/5 hover:text-white">
+          <h3 id={dialogId} className="text-[16px] font-bold text-white">{title}</h3>
+          <button type="button" aria-label={closeLabel} onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg text-mut hover:bg-white/5 hover:text-white">
             <X size={18} />
           </button>
         </div>
@@ -60,17 +89,19 @@ export function Field({ label, children, className }: { label: string; children:
   );
 }
 
-export function ThemeToggle({ theme, onToggle }: { theme: "dark" | "light"; onToggle: () => void }) {
+export function ThemeToggle({ theme, onToggle, label }: { theme: "dark" | "light"; onToggle: () => void; label: string }) {
   return (
     <button
       onClick={onToggle}
-      className="relative flex h-8 w-[58px] items-center rounded-full border border-line bg-white/[0.03] px-1 transition hover:border-gold/50"
-      title={theme === "dark" ? "Light" : "Dark"}
+      type="button"
+      aria-label={label}
+      aria-pressed={theme === "light"}
+      className="relative flex h-11 w-[68px] items-center rounded-full border border-line bg-white/[0.03] px-1 transition hover:border-gold/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
     >
       <span
         className={clsx(
-          "flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#00e5b7] to-[#00b8d9] text-[#06151b] shadow transition-transform duration-300",
-          theme === "light" ? "translate-x-[26px]" : "translate-x-0"
+          "flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#00e5b7] to-[#00b8d9] text-[#06151b] shadow transition-transform duration-300",
+          theme === "light" ? "translate-x-[24px]" : "translate-x-0"
         )}
       >
         {theme === "light" ? <Sun size={13} /> : <Moon size={13} />}
@@ -79,14 +110,16 @@ export function ThemeToggle({ theme, onToggle }: { theme: "dark" | "light"; onTo
   );
 }
 
-export function LangToggle({ lang, onChange }: { lang: Lang; onChange: (l: Lang) => void }) {
+export function LangToggle({ lang, onChange, label }: { lang: Lang; onChange: (l: Lang) => void; label: string }) {
   return (
-    <div className="flex h-8 items-center rounded-full border border-line bg-white/[0.03] p-0.5 text-[11px] font-bold">
+    <div role="group" aria-label={label} className="flex h-12 items-center rounded-full border border-line bg-white/[0.03] p-0.5 text-[11px] font-bold">
       {(["fr", "en"] as Lang[]).map((l) => (
         <button
           key={l}
+          type="button"
+          aria-pressed={lang === l}
           onClick={() => onChange(l)}
-          className={clsx("h-full rounded-full px-2.5 uppercase transition", lang === l ? "bg-gold text-[#17130a]" : "text-mut hover:text-white")}
+          className={clsx("h-full min-h-11 min-w-11 rounded-full px-2.5 uppercase transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold", lang === l ? "bg-gold text-on-gold" : "text-mut hover:text-white")}
         >
           {l}
         </button>

@@ -319,8 +319,8 @@ export default function Dashboard() {
     return (
       <>
         <div className="absolute right-5 top-5 z-10 flex gap-2">
-          <LangToggle lang={lang} onChange={changeLang} />
-          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+          <LangToggle lang={lang} onChange={changeLang} label={d.language} />
+          <ThemeToggle theme={theme} onToggle={toggleTheme} label={`${d.theme}: ${theme === "dark" ? (lang === "fr" ? "clair" : "light") : (lang === "fr" ? "sombre" : "dark")}`} />
         </div>
         <AuthScreen d={d} devMode={devMode} onDone={onAuth} />
       </>
@@ -362,8 +362,8 @@ export default function Dashboard() {
           <div className="flex flex-wrap items-center gap-3">
             <MarketClock d={d} lang={lang} timezone={profile.timezone} />
             <NotificationsBell refreshKey={notificationRefresh} />
-            <LangToggle lang={lang} onChange={changeLang} />
-            <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <LangToggle lang={lang} onChange={changeLang} label={d.language} />
+            <ThemeToggle theme={theme} onToggle={toggleTheme} label={`${d.theme}: ${theme === "dark" ? (lang === "fr" ? "clair" : "light") : (lang === "fr" ? "sombre" : "dark")}`} />
           </div>
         </header>
 
