@@ -68,6 +68,21 @@ body {
   background-attachment: fixed;
 }
 
+.ambient-lines {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+  contain: strict;
+}
+
+.app-content-layer {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+}
+
 ::selection {
   background: rgba(0, 229, 183, 0.35);
 }

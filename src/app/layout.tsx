@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Archivo, Chivo_Mono } from "next/font/google";
+import AmbientLines from "@/components/ambient-lines";
 import "./globals.css";
 
 const archivo = Archivo({ subsets: ["latin"], variable: "--font-archivo", weight: ["400", "500", "600", "700", "800"] });
@@ -10,6 +11,16 @@ export const metadata: Metadata = {
   title: "DATAYO-journal — Analyse · Backtest · Trade",
   applicationName: "DATAYO-journal",
   description: "Journal de trading DATAYO : analysez vos trades, suivez vos performances et progressez.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "DATAYO",
+  },
 };
 
 const themeScript = `(function(){try{var t=localStorage.getItem('tj-theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');}}catch(e){}})();`;
@@ -20,7 +31,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={`${archivo.variable} ${chivo.variable} antialiased`}>{children}</body>
+      <body className={`${archivo.variable} ${chivo.variable} antialiased`}>
+        <AmbientLines />
+        <div className="app-content-layer">{children}</div>
+      </body>
     </html>
   );
 }
